@@ -30,6 +30,29 @@ if (!fs.existsSync(PARSED_FILES_DIR)) {
 }
 
 /**
+ * Convert DD/MM/YY format to ISO format (YYYY-MM-DD)
+ * Example: "31/01/26" -> "2026-01-31"
+ */
+function toISODate(dateStr) {
+  const parts = dateStr.split('/');
+  if (parts.length !== 3) return dateStr;
+  
+  let day = parseInt(parts[0], 10);
+  let month = parseInt(parts[1], 10);
+  let year = parseInt(parts[2], 10);
+  
+  // Handle 2-digit year
+  if (year < 100) {
+    year += 2000;
+  }
+  
+  day = String(day).padStart(2, '0');
+  month = String(month).padStart(2, '0');
+  
+  return `${year}-${month}-${day}`;
+}
+
+/**
  * Convert Excel file to CSV
  */
 function convertExcelToCSV(filePath) {
@@ -87,16 +110,46 @@ function parseCSV(csvContent) {
  */
 function extractTransactions(records) {
   const categoryKeywords = {
+    'Investments': ['groww', 'stocks', 'mutual', 'share', 'mf'],
     'Coffee': ['coffee', 'cothas'],
     'Food': ['food', 'cafe', 'restaurant', 'bakery', 'snacks', 'apollo pharmacy', 'pharmacy', 'grocery'],
     'Shopping': ['shopping', 'malai', 'sports', 'shuttle', 'gyftr'],
     'Utilities': ['billpay', 'bill', 'electricity', 'water'],
-    'Transfers': ['upi', 'neft', 'imps', 'ft-'],
-    'Investments': ['groww', 'stocks', 'mutual', 'share', 'mf'],
     'Salary': ['salary', 'neft cr', 'rently'],
+    'Transfers': ['upi', 'neft', 'imps', 'ft-'],
     'Entertainment': ['games', 'movie', 'show'],
     'Personal': ['loan', 'emi'],
   };
+
+  const transactionTypePatterns = {
+    'UPI': ['upi-'],
+    'Bill Payment': ['billpay', 'ib billpay'],
+    'Transfer': ['neft', 'imps', 'ft-'],
+    'POS': ['pos '],
+    'Check': ['chq'],
+  };
+
+  /**
+   * Extract tags from transaction description
+   */
+  function extractTags(description) {
+    const tags = [];
+    const descUpper = description.toUpperCase();
+    
+    if (descUpper.includes('GROWW')) tags.push('GROWW');
+    if (descUpper.includes('AUTOPAY')) tags.push('AUTOPAY');
+    if (descUpper.includes('BILLPAY')) tags.push('BILLPAY');
+    if (descUpper.includes('SALARY') || descUpper.includes('RENTLY')) tags.push('SALARY');
+    if (descUpper.includes('NEFT CR') || descUpper.includes('NEFT')) tags.push('NEFT');
+    if (descUpper.includes('COTHAS')) tags.push('COTHAS');
+    if (descUpper.includes('APOLLO')) tags.push('APOLLO');
+    if (descUpper.includes('SHOPPING')) tags.push('SHOPPING');
+    if (descUpper.includes('SHUTTLE')) tags.push('SPORTS');
+    if (descUpper.includes('GYFTR')) tags.push('GYFTR');
+    if (descUpper.includes('GOLD')) tags.push('JEWELRY');
+    
+    return [...new Set(tags)]; // Remove duplicates
+  }
 
   return records
     .filter(row => {
@@ -139,11 +192,23 @@ function extractTransactions(records) {
         }
       }
 
+      // Extract transaction type
+      let type = 'Other';
+      for (const [typeKey, patterns] of Object.entries(transactionTypePatterns)) {
+        if (patterns.some(pattern => descLower.includes(pattern))) {
+          type = typeKey;
+          break;
+        }
+      }
+
       return {
-        date,
+        date: toISODate(date),
         description,
         category,
+        type,
+        tags: extractTags(description),
         amount: parseFloat(amount.toFixed(2)),
+        reference_number: row['Chq./Ref.No.'] ? row['Chq./Ref.No.'].trim() : null,
       };
     })
     .filter(t => t.date && t.amount !== 0); // Filter out empty rows and zero amounts

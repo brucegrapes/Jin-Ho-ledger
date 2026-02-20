@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Save to database
-    saveTransactions(transactions);
+    const result = saveTransactions(transactions);
     
     // Save parsed JSON to parsed_files folder
     const jsonFileName = saveParsedJSON(transactions, file.name);
@@ -50,7 +50,9 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ 
       success: true, 
-      count: transactions.length,
+      count: result.inserted,
+      skipped: result.skipped,
+      errors: result.errors,
       fileName: file.name,
       jsonFile: jsonFileName,
     });

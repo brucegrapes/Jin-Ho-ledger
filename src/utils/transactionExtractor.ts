@@ -1,24 +1,50 @@
 // utils/transactionExtractor.ts
 // Mirrors the logic from scripts/processUploads.js
 
+import { toISODate } from './dateParser';
+
 export interface Transaction {
   date: string;
   description: string;
   category: string;
+  type: string;
+  tags: string[];
   amount: number;
+  reference_number?: string | null;
 }
 
 const CATEGORY_KEYWORDS: Record<string, string[]> = {
+  'Investments': ['groww', 'stocks', 'mutual', 'share', 'mf'],
   'Coffee': ['coffee', 'cothas'],
   'Food': ['food', 'cafe', 'restaurant', 'bakery', 'snacks', 'apollo pharmacy', 'pharmacy', 'grocery'],
   'Shopping': ['shopping', 'malai', 'sports', 'shuttle', 'gyftr'],
   'Utilities': ['billpay', 'bill', 'electricity', 'water'],
-  'Transfers': ['upi', 'neft', 'imps', 'ft-'],
-  'Investments': ['groww', 'stocks', 'mutual', 'share', 'mf'],
   'Salary': ['salary', 'neft cr', 'rently'],
+  'Transfers': ['upi', 'neft', 'imps', 'ft-'],
   'Entertainment': ['games', 'movie', 'show'],
   'Personal': ['loan', 'emi'],
 };
+
+const TRANSACTION_TYPE_PATTERNS: Record<string, string[]> = {
+  'UPI': ['upi-'],
+  'Bill Payment': ['billpay', 'ib billpay'],
+  'Transfer': ['neft', 'imps', 'ft-'],
+  'POS': ['pos '],
+  'Check': ['chq'],
+};
+
+/**
+ * Extract transaction type based on description
+ */
+function extractTransactionType(description: string): string {
+  const descLower = description.toLowerCase();
+  for (const [type, patterns] of Object.entries(TRANSACTION_TYPE_PATTERNS)) {
+    if (patterns.some(pattern => descLower.includes(pattern))) {
+      return type;
+    }
+  }
+  return 'Other';
+}
 
 /**
  * Auto-categorize transaction based on description
@@ -31,6 +57,30 @@ function autoCategorize(description: string): string {
     }
   }
   return 'Uncategorized';
+}
+
+/**
+ * Extract tags from transaction description
+ * Tags are identifiers like GROWW, AUTOPAY, SALARY, etc.
+ */
+function extractTags(description: string): string[] {
+  const tags: string[] = [];
+  const descUpper = description.toUpperCase();
+  
+  // Pattern-based tags
+  if (descUpper.includes('GROWW')) tags.push('GROWW');
+  if (descUpper.includes('AUTOPAY')) tags.push('AUTOPAY');
+  if (descUpper.includes('BILLPAY')) tags.push('BILLPAY');
+  if (descUpper.includes('SALARY') || descUpper.includes('RENTLY')) tags.push('SALARY');
+  if (descUpper.includes('NEFT CR') || descUpper.includes('NEFT')) tags.push('NEFT');
+  if (descUpper.includes('COTHAS')) tags.push('COTHAS');
+  if (descUpper.includes('APOLLO')) tags.push('APOLLO');
+  if (descUpper.includes('SHOPPING')) tags.push('SHOPPING');
+  if (descUpper.includes('SHUTTLE')) tags.push('SPORTS');
+  if (descUpper.includes('GYFTR')) tags.push('GYFTR');
+  if (descUpper.includes('GOLD')) tags.push('JEWELRY');
+  
+  return Array.from(new Set(tags)); // Remove duplicates
 }
 
 /**
@@ -69,10 +119,13 @@ export function extractTransactions(records: Record<string, string>[]): Transact
       }
 
       return {
-        date,
+        date: toISODate(date),
         description,
         category: autoCategorize(description),
+        type: extractTransactionType(description),
+        tags: extractTags(description),
         amount: parseFloat(amount.toFixed(2)),
+        reference_number: row['Chq./Ref.No.'] ? row['Chq./Ref.No.'].trim() : null,
       };
     })
     .filter(t => t.date && t.amount !== 0); // Filter out empty rows and zero amounts
@@ -111,11 +164,21 @@ export function extractTransactionsFallback(records: Record<string, string>[]): 
         amount = isNaN(val) ? 0 : val;
       }
 
+      // Find reference number column
+      const refKey = Object.keys(row).find(k => 
+        k.toLowerCase().includes('chq') || 
+        k.toLowerCase().includes('ref') ||
+        k.toLowerCase().includes('reference')
+      );
+
       return {
-        date,
+        date: toISODate(date),
         description,
         category: autoCategorize(description),
+        type: extractTransactionType(description),
+        tags: extractTags(description),
         amount: parseFloat(amount.toFixed(2)),
+        reference_number: refKey && row[refKey] ? row[refKey].trim() : null,
       };
     })
     .filter(t => t.date && t.amount !== 0);

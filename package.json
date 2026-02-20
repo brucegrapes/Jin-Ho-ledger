@@ -3,9 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "portless ledgerdev next dev",
     "build": "next build",
-    "start": "next start",
+    "start": "portless ledger next start",
     "lint": "eslint",
     "process-uploads": "node scripts/processUploads.js",
     "process-uploads:clean": "node scripts/processUploads.js --clean"

@@ -10,7 +10,10 @@ CREATE TABLE IF NOT EXISTS transactions (
   date TEXT NOT NULL,
   description TEXT,
   category TEXT,
-  amount REAL NOT NULL
+  type TEXT,
+  tags TEXT,
+  amount REAL NOT NULL,
+  reference_number TEXT UNIQUE
 );
 `;
 

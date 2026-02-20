@@ -9,7 +9,10 @@ export interface Transaction {
   date: string;
   description: string;
   category: string;
+  type: string;
+  tags: string[];
   amount: number;
+  reference_number?: string | null;
 }
 
 /**
@@ -84,14 +87,37 @@ export function importExcel(filePath: string): Transaction[] {
   }
 }
 
-export function saveTransactions(transactions: Transaction[]) {
-  const stmt = db.prepare('INSERT INTO transactions (date, description, category, amount) VALUES (?, ?, ?, ?)');
+export function saveTransactions(transactions: Transaction[]): { inserted: number; skipped: number; errors: string[] } {
+  const stmt = db.prepare('INSERT INTO transactions (date, description, category, type, tags, amount, reference_number) VALUES (?, ?, ?, ?, ?, ?, ?)');
+  const stmtCheck = db.prepare('SELECT id FROM transactions WHERE reference_number = ?');
+  
+  let inserted = 0;
+  let skipped = 0;
+  const errors: string[] = [];
+  
   const insertMany = db.transaction((rows: Transaction[]) => {
     for (const t of rows) {
-      stmt.run(t.date, t.description, t.category, t.amount);
+      try {
+        // Check if reference number already exists (only if reference_number is provided)
+        if (t.reference_number) {
+          const existing = stmtCheck.get(t.reference_number);
+          if (existing) {
+            skipped++;
+            continue;
+          }
+        }
+        
+        stmt.run(t.date, t.description, t.category, t.type, JSON.stringify(t.tags), t.amount, t.reference_number || null);
+        inserted++;
+      } catch (err) {
+        const errorMsg = `Error inserting transaction ${t.date} ${t.description}: ${(err as Error).message}`;
+        errors.push(errorMsg);
+      }
     }
   });
+  
   insertMany(transactions);
+  return { inserted, skipped, errors };
 }
 
 /**
