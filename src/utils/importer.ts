@@ -4,7 +4,6 @@ import fs from 'fs';
 import * as xlsx from 'xlsx';
 import { extractTransactions, extractTransactionsFallback } from './transactionExtractor';
 import { encryptString } from './serverEncryption';
-import path from 'path';
 
 export interface Transaction {
   date: string;
@@ -131,22 +130,5 @@ export function saveTransactions(transactions: Transaction[]): { inserted: numbe
   
   insertMany(transactions);
   return { inserted, skipped, errors };
-}
-
-/**
- * Save parsed transactions to JSON file in parsed_files folder
- */
-export function saveParsedJSON(transactions: Transaction[], originalFileName: string) {
-  const parsedFilesDir = path.join(process.cwd(), 'parsed_files');
-  if (!fs.existsSync(parsedFilesDir)) {
-    fs.mkdirSync(parsedFilesDir, { recursive: true });
-  }
-  
-  const baseName = path.basename(originalFileName, path.extname(originalFileName));
-  const jsonFileName = `${baseName}_parsed.json`;
-  const jsonPath = path.join(parsedFilesDir, jsonFileName);
-  
-  fs.writeFileSync(jsonPath, JSON.stringify(transactions, null, 2));
-  return jsonFileName;
 }
 

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { importCSV, importExcel, saveTransactions, saveParsedJSON } from '@/utils/importer';
+import { importCSV, importExcel, saveTransactions } from '@/utils/importer';
 import fs from 'fs';
 import path from 'path';
 
@@ -42,9 +42,6 @@ export async function POST(req: NextRequest) {
     // Save to database
     const result = saveTransactions(transactions);
     
-    // Save parsed JSON to parsed_files folder
-    const jsonFileName = saveParsedJSON(transactions, file.name);
-    
     // Clean up temp file
     fs.unlinkSync(tempPath);
 
@@ -54,7 +51,6 @@ export async function POST(req: NextRequest) {
       skipped: result.skipped,
       errors: result.errors,
       fileName: file.name,
-      jsonFile: jsonFileName,
     });
   } catch (err) {
     // Clean up on error

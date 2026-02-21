@@ -20,7 +20,7 @@ export function getBudgetStatus(today: string): BudgetStatus[] {
   const status = budgets.map((b) => {
     const result = db.prepare('SELECT SUM(amount) as total FROM transactions WHERE category = ? AND date >= ? AND date <= ?')
       .get(b.category, b.start_date, today) as { total: number | null };
-    const spent = result.total || 0;
+    const spent = Math.abs(result.total || 0);
     return {
       category: b.category,
       budget: b.amount,
