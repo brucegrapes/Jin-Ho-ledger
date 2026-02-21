@@ -3,6 +3,7 @@ import { parse } from 'csv-parse/sync';
 import fs from 'fs';
 import * as xlsx from 'xlsx';
 import { extractTransactions, extractTransactionsFallback } from './transactionExtractor';
+import { encryptString } from './serverEncryption';
 import path from 'path';
 
 export interface Transaction {
@@ -107,7 +108,19 @@ export function saveTransactions(transactions: Transaction[]): { inserted: numbe
           }
         }
         
-        stmt.run(t.date, t.description, t.category, t.type, JSON.stringify(t.tags), t.amount, t.reference_number || null);
+        // Encrypt sensitive fields
+        const encryptedDescription = encryptString(t.description);
+        const encryptedReference = encryptString(t.reference_number || null);
+        
+        stmt.run(
+          t.date,
+          encryptedDescription,
+          t.category,
+          t.type,
+          JSON.stringify(t.tags),
+          t.amount,
+          encryptedReference
+        );
         inserted++;
       } catch (err) {
         const errorMsg = `Error inserting transaction ${t.date} ${t.description}: ${(err as Error).message}`;
