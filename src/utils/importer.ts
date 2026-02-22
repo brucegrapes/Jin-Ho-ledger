@@ -2,7 +2,7 @@ import db from './db';
 import { parse } from 'csv-parse/sync';
 import fs from 'fs';
 import * as xlsx from 'xlsx';
-import { extractTransactions, extractTransactionsFallback } from './transactionExtractor';
+import { extractTransactions, extractTransactionsFallback, extractIndianBankTransactions } from './transactionExtractor';
 import { encryptString } from './serverEncryption';
 
 export interface Transaction {
@@ -36,8 +36,13 @@ function findAndExtractData(csvContent: string) {
   return csvContent;
 }
 
-export function importCSV(filePath: string): Transaction[] {
+export function importCSV(filePath: string, bankType: string = 'hdfc'): Transaction[] {
   const content = fs.readFileSync(filePath, 'utf-8');
+
+  if (bankType === 'indian_bank' || bankType === 'iob') {
+    return extractIndianBankTransactions(content);
+  }
+
   const dataContent = findAndExtractData(content);
   const records: Record<string, string>[] = parse(dataContent, {
     columns: true,
@@ -55,7 +60,7 @@ export function importCSV(filePath: string): Transaction[] {
   return transactions;
 }
 
-export function importExcel(filePath: string): Transaction[] {
+export function importExcel(filePath: string, bankType: string = 'hdfc'): Transaction[] {
   if (!fs.existsSync(filePath)) {
     throw new Error(`File does not exist: ${filePath}`);
   }
@@ -67,6 +72,11 @@ export function importExcel(filePath: string): Transaction[] {
     
     // Convert to CSV first to use same parsing logic
     const csv = xlsx.utils.sheet_to_csv(sheet);
+
+    if (bankType === 'indian_bank' || bankType === 'iob') {
+      return extractIndianBankTransactions(csv);
+    }
+
     const dataContent = findAndExtractData(csv);
     const json: Record<string, string>[] = parse(dataContent, {
       columns: true,

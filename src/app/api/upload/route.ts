@@ -9,6 +9,7 @@ export const runtime = 'nodejs';
 export async function POST(req: NextRequest) {
   const formData = await req.formData();
   const file = formData.get('file') as File;
+  const bankType = (formData.get('bankType') as string) || 'hdfc';
   if (!file) {
     return NextResponse.json({ error: 'No file uploaded' }, { status: 400 });
   }
@@ -32,9 +33,9 @@ export async function POST(req: NextRequest) {
   let transactions = [];
   try {
     if (ext === 'csv') {
-      transactions = importCSV(tempPath);
+      transactions = importCSV(tempPath, bankType);
     } else if (ext === 'xlsx' || ext === 'xls') {
-      transactions = importExcel(tempPath);
+      transactions = importExcel(tempPath, bankType);
     } else {
       fs.unlinkSync(tempPath);
       return NextResponse.json({ error: 'Unsupported file type' }, { status: 400 });

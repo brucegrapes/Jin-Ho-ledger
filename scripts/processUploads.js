@@ -7,10 +7,11 @@
  * converts them to CSV format, parses them, and stores parsed data in the parsed_files folder.
  * 
  * Usage:
- *   node scripts/processUploads.js [--clean]
+ *   node scripts/processUploads.js [--clean] [--bank=hdfc|indian_bank|iob]
  * 
  * Options:
  *   --clean  Delete original files after processing (optional)
+ *   --bank   Bank type: hdfc (default), indian_bank, or iob
  */
 
 const fs = require('fs');
@@ -215,10 +216,345 @@ function extractTransactions(records) {
 }
 
 /**
+ * Convert "DD Mon YYYY" format to ISO date (YYYY-MM-DD)
+ * Example: "03 Mar 2025" -> "2025-03-03"
+ */
+function toISODateLong(dateStr) {
+  const months = { jan: '01', feb: '02', mar: '03', apr: '04', may: '05', jun: '06',
+                    jul: '07', aug: '08', sep: '09', oct: '10', nov: '11', dec: '12' };
+  const parts = dateStr.trim().split(/\s+/);
+  if (parts.length !== 3) return dateStr;
+  const day = parts[0].padStart(2, '0');
+  const month = months[parts[1].toLowerCase()];
+  const year = parts[2];
+  if (!month) return dateStr;
+  return `${year}-${month}-${day}`;
+}
+
+/**
+ * Convert "DD-MMM-YY" format to ISO date (YYYY-MM-DD)
+ * Example: "18-Feb-26" -> "2026-02-18"
+ */
+function toISODateIOB(dateStr) {
+  const months = { jan: '01', feb: '02', mar: '03', apr: '04', may: '05', jun: '06',
+                    jul: '07', aug: '08', sep: '09', oct: '10', nov: '11', dec: '12' };
+  const parts = dateStr.trim().split('-');
+  if (parts.length !== 3) return dateStr;
+  const day = parts[0].padStart(2, '0');
+  const month = months[parts[1].toLowerCase()];
+  let year = parseInt(parts[2], 10);
+  // Handle 2-digit year: assume 2000s
+  if (year < 100) year += 2000;
+  if (!month) return dateStr;
+  return `${year}-${month}-${day}`;
+}
+
+/**
+ * Parse INR amount string from Indian Bank statements
+ * Examples: "INR 600.00" -> 600, "INR 50,000.00" -> 50000, " - " -> 0
+ */
+function parseINRAmount(value) {
+  if (!value) return 0;
+  const trimmed = value.trim();
+  if (trimmed === '-' || trimmed === '- ' || trimmed === ' - ' || trimmed === '') return 0;
+  const cleaned = trimmed.replace(/INR\s*/i, '').replace(/,/g, '').trim();
+  const num = parseFloat(cleaned);
+  return isNaN(num) ? 0 : num;
+}
+
+/**
+ * Extract reference number from IOB transaction description
+ * IOB format: "S45656391 Transfer MOB UPI/118687461554/DR/Cothas Coffee"
+ */
+function extractIOBReference(description) {
+  // Try S-number first (IOB reference)
+  const sMatch = description.match(/^S(\d{8,})/);
+  if (sMatch) return sMatch[1];
+
+  // Try UPI reference
+  const upiMatch = description.match(/\/UPI\/(\d{10,})\//);
+  if (upiMatch) return upiMatch[1];
+
+  // Try IMPS reference
+  const impsMatch = description.match(/IMPS\/(\d+)\//);
+  if (impsMatch) return impsMatch[1];
+
+  // Try NEFT reference
+  const neftMatch = description.match(/NEFT[^\/]*\/(\w+)/);
+  if (neftMatch) return neftMatch[1];
+
+  return null;
+}
+
+/**
+ * Extract transactions from IOB CSV format.
+ * Format: Date,Transaction Details,Debits,Credits,Balance
+ * Example: "18-Feb-26","S45656391 Transfer UPI/118687461554/DR/Cothas Coffee","4.14","-","0.00"
+ */
+function extractIOBTransactions(csvContent) {
+  const lines = csvContent.split('\n');
+  const transactions = [];
+
+  const categoryKeywords = {
+    'Investments': ['groww', 'stocks', 'mutual', 'share', 'mf', 'indmoney'],
+    'Coffee': ['coffee', 'cothas'],
+    'Food': ['food', 'cafe', 'restaurant', 'bakery', 'snacks', 'apollo pharmacy', 'pharmacy', 'grocery', 'eggs', 'coconut'],
+    'Shopping': ['shopping', 'malai', 'sports', 'shuttle', 'gyftr'],
+    'Utilities': ['billpay', 'bill', 'electricity', 'water', 'recharge'],
+    'Salary': ['salary', 'neft cr', 'rently'],
+    'Transfers': ['upi', 'neft', 'imps', 'ft-', 'transfer'],
+    'Entertainment': ['games', 'movie', 'show'],
+    'Personal': ['loan', 'emi'],
+  };
+
+  const transactionTypePatterns = {
+    'UPI': ['upi'],
+    'Bill Payment': ['billpay'],
+    'Transfer': ['neft', 'imps', 'transfer'],
+    'POS': ['pos '],
+    'Check': ['chq'],
+  };
+
+  function extractTags(description) {
+    const tags = [];
+    const descUpper = description.toUpperCase();
+    if (descUpper.includes('GROWW')) tags.push('GROWW');
+    if (descUpper.includes('AUTOPAY')) tags.push('AUTOPAY');
+    if (descUpper.includes('BILLPAY')) tags.push('BILLPAY');
+    if (descUpper.includes('SALARY') || descUpper.includes('RENTLY')) tags.push('SALARY');
+    if (descUpper.includes('NEFT')) tags.push('NEFT');
+    if (descUpper.includes('IMPS')) tags.push('IMPS');
+    return [...new Set(tags)];
+  }
+
+  // Skip header
+  for (let i = 1; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (!line) continue;
+
+    // Parse CSV line with quoted fields
+    const cols = [];
+    let cur = '';
+    let inQuotes = false;
+    for (const ch of line) {
+      if (ch === '"') { inQuotes = !inQuotes; }
+      else if (ch === ',' && !inQuotes) { cols.push(cur); cur = ''; }
+      else { cur += ch; }
+    }
+    cols.push(cur);
+
+    if (cols.length < 5) continue;
+
+    const dateStr = cols[0].trim();
+    const description = cols[1].trim();
+    const debitStr = cols[2].trim();
+    const creditStr = cols[3].trim();
+
+    // Parse amounts (handle "-" as 0)
+    const debit = (debitStr === '-' || debitStr === '') ? 0 : parseFloat(debitStr.replace(/,/g, ''));
+    const credit = (creditStr === '-' || creditStr === '') ? 0 : parseFloat(creditStr.replace(/,/g, ''));
+
+    let amount = 0;
+    if (debit > 0) {
+      amount = -debit; // Debit is negative (money going out)
+    } else if (credit > 0) {
+      amount = credit;  // Credit is positive (money coming in)
+    }
+
+    if (amount === 0 || !dateStr || !description) continue;
+
+    // Auto-categorize
+    let category = 'Uncategorized';
+    const descLower = description.toLowerCase();
+    for (const [cat, keywords] of Object.entries(categoryKeywords)) {
+      if (keywords.some(keyword => descLower.includes(keyword))) {
+        category = cat;
+        break;
+      }
+    }
+
+    // Extract transaction type
+    let type = 'Other';
+    for (const [typeKey, patterns] of Object.entries(transactionTypePatterns)) {
+      if (patterns.some(pattern => descLower.includes(pattern))) {
+        type = typeKey;
+        break;
+      }
+    }
+
+    const refNumber = extractIOBReference(description);
+
+    transactions.push({
+      date: toISODateIOB(dateStr),
+      description,
+      category,
+      type,
+      tags: extractTags(description),
+      amount: parseFloat(amount.toFixed(2)),
+      reference_number: refNumber,
+    });
+  }
+
+  return transactions;
+}
+
+/**
+ * Extract transactions from Indian Bank CSV content (raw line-based parsing).
+ * Supports two formats:
+ * 1. Indian Bank Excel: Repeating headers, multi-line descriptions, INR-prefixed amounts.
+ * 2. IOB CSV: Clean CSV with Date,Transaction Details,Debits,Credits,Balance header.
+ */
+function extractIndianBankTransactions(csvContent) {
+  const lines = csvContent.split('\n');
+  
+  // Detect format: IOB has header "Date,Transaction Details,Debits,Credits,Balance"
+  const firstLine = lines[0] || '';
+  const isIOBFormat = firstLine.includes('Date,Transaction Details,Debits,Credits,Balance');
+  
+  if (isIOBFormat) {
+    return extractIOBTransactions(csvContent);
+  }
+  
+  const transactions = [];
+
+  let currentDate = '';
+  let currentDesc = '';
+  let currentDebit = 0;
+  let currentCredit = 0;
+
+  const categoryKeywords = {
+    'Investments': ['groww', 'stocks', 'mutual', 'share', 'mf', 'indmoney'],
+    'Coffee': ['coffee', 'cothas'],
+    'Food': ['food', 'cafe', 'restaurant', 'bakery', 'snacks', 'apollo pharmacy', 'pharmacy', 'grocery', 'eggs', 'coconut'],
+    'Shopping': ['shopping', 'malai', 'sports', 'shuttle', 'gyftr'],
+    'Utilities': ['billpay', 'bill', 'electricity', 'water', 'recharge'],
+    'Salary': ['salary', 'neft cr', 'rently'],
+    'Transfers': ['upi', 'neft', 'imps', 'ft-', 'transfer from', 'transfer to'],
+    'Entertainment': ['games', 'movie', 'show'],
+    'Personal': ['loan', 'emi', 'loandisburs'],
+    'ATM': ['atm wdl', 'self-'],
+    'Bank Charges': ['chg for', 'chrg', 'amc charge'],
+  };
+
+  const transactionTypePatterns = {
+    'UPI': ['upi/', '/upi'],
+    'Bill Payment': ['billpay', 'ib billpay'],
+    'Transfer': ['neft', 'imps', 'transfer from', 'transfer to'],
+    'ATM': ['atm wdl', 'self-'],
+    'POS': ['pos '],
+    'Check': ['chq'],
+  };
+
+  function extractTags(description) {
+    const tags = [];
+    const descUpper = description.toUpperCase();
+    if (descUpper.includes('GROWW')) tags.push('GROWW');
+    if (descUpper.includes('INDMONEY')) tags.push('INDMONEY');
+    if (descUpper.includes('AUTOPAY')) tags.push('AUTOPAY');
+    if (descUpper.includes('BILLPAY')) tags.push('BILLPAY');
+    if (descUpper.includes('SALARY') || descUpper.includes('RENTLY')) tags.push('SALARY');
+    if (descUpper.includes('NEFT')) tags.push('NEFT');
+    if (descUpper.includes('IMPS')) tags.push('IMPS');
+    if (descUpper.includes('ATM WDL') || descUpper.includes('SELF-')) tags.push('ATM');
+    if (descUpper.includes('PHONEP')) tags.push('PHONEPE');
+    if (descUpper.includes('PAYTM')) tags.push('PAYTM');
+    if (descUpper.includes('GOOGLE')) tags.push('GOOGLE');
+    return [...new Set(tags)];
+  }
+
+  function flushTransaction() {
+    if (!currentDate || !currentDesc) return;
+    const description = currentDesc.trim();
+    let amount = 0;
+    if (currentDebit > 0) {
+      amount = -currentDebit;
+    } else if (currentCredit > 0) {
+      amount = currentCredit;
+    }
+    if (amount === 0) return;
+
+    // Auto-categorize
+    let category = 'Uncategorized';
+    const descLower = description.toLowerCase();
+    for (const [cat, keywords] of Object.entries(categoryKeywords)) {
+      if (keywords.some(keyword => descLower.includes(keyword))) {
+        category = cat;
+        break;
+      }
+    }
+
+    // Extract transaction type
+    let type = 'Other';
+    for (const [typeKey, patterns] of Object.entries(transactionTypePatterns)) {
+      if (patterns.some(pattern => descLower.includes(pattern))) {
+        type = typeKey;
+        break;
+      }
+    }
+
+    // Extract reference number
+    let refNumber = null;
+    const upiMatch = description.match(/\/UPI\/(\d{10,})\//);
+    const impsMatch = description.match(/\/IMPS\/P2A\/(\d+)\//);
+    const neftMatch = description.match(/NEFT\/\w+\/(\w+)\//);
+    if (upiMatch) refNumber = upiMatch[1];
+    else if (impsMatch) refNumber = impsMatch[1];
+    else if (neftMatch) refNumber = neftMatch[1];
+
+    transactions.push({
+      date: toISODateLong(currentDate),
+      description,
+      category,
+      type,
+      tags: extractTags(description),
+      amount: parseFloat(amount.toFixed(2)),
+      reference_number: refNumber,
+    });
+  }
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.replace(/,/g, '') === '') continue;
+    if (trimmed.includes(',Date,Transaction Details,')) continue;
+
+    // Split by comma respecting quoted fields
+    const cols = [];
+    let cur = '';
+    let inQuotes = false;
+    for (const ch of line) {
+      if (ch === '"') { inQuotes = !inQuotes; }
+      else if (ch === ',' && !inQuotes) { cols.push(cur); cur = ''; }
+      else { cur += ch; }
+    }
+    cols.push(cur);
+
+    const dateVal = (cols[1] || '').trim();
+    const descVal = (cols[2] || '').trim();
+    const debitVal = (cols[8] || '').trim();
+    const creditVal = (cols[10] || '').trim();
+
+    const isDateRow = /^\d{2}\s+\w{3}\s+\d{4}$/.test(dateVal);
+
+    if (isDateRow) {
+      flushTransaction();
+      currentDate = dateVal;
+      currentDesc = descVal;
+      currentDebit = parseINRAmount(debitVal);
+      currentCredit = parseINRAmount(creditVal);
+    } else if (!dateVal && descVal) {
+      currentDesc += ' ' + descVal;
+    }
+  }
+
+  flushTransaction();
+  return transactions;
+}
+
+/**
  * Process a single file
  */
-function processFile(filePath, fileName) {
-  console.log(`\n📄 Processing: ${fileName}`);
+function processFile(filePath, fileName, bankType) {
+  console.log(`\n📄 Processing: ${fileName} (bank: ${bankType})`);
   
   const ext = path.extname(fileName).toLowerCase();
   let csvContent, parsedData;
@@ -239,7 +575,12 @@ function processFile(filePath, fileName) {
     }
 
     // Extract transactions
-    const transactions = extractTransactions(parsedData);
+    let transactions;
+    if (bankType === 'indian_bank' || bankType === 'iob') {
+      transactions = extractIndianBankTransactions(csvContent);
+    } else {
+      transactions = extractTransactions(parsedData);
+    }
     
     // Create output file names
     const baseName = path.basename(fileName, ext);
@@ -275,6 +616,8 @@ function main() {
   // Get command line arguments
   const args = process.argv.slice(2);
   const shouldClean = args.includes('--clean');
+  const bankArg = args.find(a => a.startsWith('--bank='));
+  const bankType = bankArg ? bankArg.split('=')[1] : 'hdfc';
 
   // Read all files from uploads directory
   if (!fs.existsSync(UPLOADS_DIR)) {
@@ -298,7 +641,7 @@ function main() {
     const stat = fs.statSync(filePath);
 
     if (stat.isFile()) {
-      const result = processFile(filePath, fileName);
+      const result = processFile(filePath, fileName, bankType);
       if (result) {
         results.push(result);
         successCount++;

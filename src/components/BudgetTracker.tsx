@@ -18,7 +18,9 @@ interface BudgetStatus {
 
 export default function BudgetTracker() {
   const [budgets, setBudgets] = useState<Budget[]>([]);
+  const [txCategories, setTxCategories] = useState<string[]>([]);
   const [category, setCategory] = useState('');
+  const [customCategory, setCustomCategory] = useState('');
   const [amount, setAmount] = useState('');
   const [start, setStart] = useState('');
   const [end, setEnd] = useState('');
@@ -39,14 +41,22 @@ export default function BudgetTracker() {
     setStatus(data.status || []);
   };
 
+  const fetchCategories = async () => {
+    const res = await fetch('/api/categories');
+    const data = await res.json();
+    setTxCategories(data.categories || []);
+  };
+
   useEffect(() => {
     fetchBudgets();
     fetchStatus();
+    fetchCategories();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleAdd = async () => {
-    if (!category || !amount || !start || !end) {
+    const resolvedCategory = category === '__custom__' ? customCategory.trim() : category;
+    if (!resolvedCategory || !amount || !start || !end) {
       alert('Please fill in all fields');
       return;
     }
@@ -55,16 +65,18 @@ export default function BudgetTracker() {
       const res = await fetch('/api/budgets', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ category, amount: parseFloat(amount), start_date: start, end_date: end }),
+        body: JSON.stringify({ category: resolvedCategory, amount: parseFloat(amount), start_date: start, end_date: end }),
       });
       if (res.ok) {
         setSuccessMessage('Budget added successfully!');
         setCategory('');
+        setCustomCategory('');
         setAmount('');
         setStart('');
         setEnd('');
         fetchBudgets();
         fetchStatus();
+        fetchCategories();
         setTimeout(() => setSuccessMessage(''), 3000);
       }
     } catch (err) {
@@ -74,21 +86,10 @@ export default function BudgetTracker() {
     }
   };
 
-  const getStatusColor = (spent: number, budget: number) => {
-    const percentage = (spent / budget) * 100;
-    if (percentage <= 50) return 'bg-green-500';
-    if (percentage <= 80) return 'bg-yellow-500';
-    return 'bg-red-500';
-  };
-
-  const getStatusBgColor = (spent: number, budget: number) => {
-    const percentage = (spent / budget) * 100;
-    if (percentage <= 50) return 'bg-green-50 dark:bg-green-900/20';
-    if (percentage <= 80) return 'bg-yellow-50 dark:bg-yellow-900/20';
-    return 'bg-red-50 dark:bg-red-900/20';
-  };
-
-  const categories = Array.from(new Set(budgets.map(b => b.category)));
+  // Merge categories from transactions with any categories already in budgets
+  const allCategories = Array.from(
+    new Set([...txCategories, ...budgets.map((b) => b.category)].filter(Boolean))
+  ).sort();
 
   return (
     <div className="space-y-6">
@@ -112,13 +113,23 @@ export default function BudgetTracker() {
               style={{ borderRadius: 'var(--radius-sm)' }}
             >
               <option value="">Select category</option>
-              {categories.map(cat => (
+              {allCategories.map(cat => (
                 <option key={cat} value={cat}>
                   {cat}
                 </option>
               ))}
-              <option value={category}>{category}</option>
+              <option value="__custom__">+ Custom category…</option>
             </select>
+            {category === '__custom__' && (
+              <input
+                type="text"
+                value={customCategory}
+                onChange={e => setCustomCategory(e.target.value)}
+                placeholder="Enter category name"
+                className="mt-2 w-full border border-border bg-surface text-text-primary px-3 py-2.5 text-sm focus:ring-2 focus:ring-primary/20"
+                style={{ borderRadius: 'var(--radius-sm)' }}
+              />
+            )}
           </div>
           <div>
             <label className="block text-sm font-medium mb-1.5 text-text-secondary">
