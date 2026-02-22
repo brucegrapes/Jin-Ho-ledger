@@ -1,20 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server';
 import db from '@/utils/db';
 import { getUserFromRequest } from '@/utils/auth';
+import { writeAuditLog, extractRequestInfo, AuditAction } from '@/utils/auditLog';
 
 export async function GET(req: NextRequest) {
+  const { ipAddress, userAgent } = extractRequestInfo(req);
   const auth = getUserFromRequest(req);
   if (!auth) {
+    writeAuditLog(null, AuditAction.UNAUTHENTICATED_ACCESS, ipAddress, userAgent, { endpoint: '/api/budgets' });
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   const budgets = db.prepare('SELECT * FROM budgets WHERE user_id = ?').all(auth.user.id);
+  writeAuditLog(auth.user.id, AuditAction.BUDGET_LIST, ipAddress, userAgent, { count: (budgets as unknown[]).length });
   return NextResponse.json({ budgets });
 }
 
 export async function POST(req: NextRequest) {
+  const { ipAddress, userAgent } = extractRequestInfo(req);
   const auth = getUserFromRequest(req);
   if (!auth) {
+    writeAuditLog(null, AuditAction.UNAUTHENTICATED_ACCESS, ipAddress, userAgent, { endpoint: '/api/budgets' });
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
@@ -24,5 +30,6 @@ export async function POST(req: NextRequest) {
   }
   db.prepare('INSERT INTO budgets (category, amount, start_date, end_date, user_id) VALUES (?, ?, ?, ?, ?)')
     .run(category, amount, start_date, end_date, auth.user.id);
+  writeAuditLog(auth.user.id, AuditAction.BUDGET_CREATE, ipAddress, userAgent, { category, start_date, end_date });
   return NextResponse.json({ success: true });
 }

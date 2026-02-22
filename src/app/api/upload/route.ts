@@ -3,6 +3,7 @@ import { importCSV, importExcel, saveTransactions } from '@/utils/importer';
 import fs from 'fs';
 import path from 'path';
 import { getUserFromRequest } from '@/utils/auth';
+import { writeAuditLog, extractRequestInfo, AuditAction } from '@/utils/auditLog';
 
 export const runtime = 'nodejs';
 
@@ -14,8 +15,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'No file uploaded' }, { status: 400 });
   }
 
+  const { ipAddress, userAgent } = extractRequestInfo(req);
   const auth = getUserFromRequest(req);
   if (!auth) {
+    writeAuditLog(null, AuditAction.UNAUTHENTICATED_ACCESS, ipAddress, userAgent, { endpoint: '/api/upload' });
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
@@ -52,6 +55,13 @@ export async function POST(req: NextRequest) {
     // Clean up temp file
     fs.unlinkSync(tempPath);
 
+    writeAuditLog(auth.user.id, AuditAction.FILE_UPLOAD_SUCCESS, ipAddress, userAgent, {
+      fileName: file.name,
+      fileSize: buffer.byteLength,
+      bankType,
+      inserted: result.inserted,
+      skipped: result.skipped,
+    });
     return NextResponse.json({ 
       success: true, 
       count: result.inserted,
@@ -64,6 +74,10 @@ export async function POST(req: NextRequest) {
     if (fs.existsSync(tempPath)) {
       fs.unlinkSync(tempPath);
     }
+    writeAuditLog(auth.user.id, AuditAction.FILE_UPLOAD_FAILURE, ipAddress, userAgent, {
+      fileName: file.name,
+      reason: (err as Error).message,
+    });
     return NextResponse.json({ 
       error: `Failed to process file: ${(err as Error).message}` 
     }, { status: 400 });

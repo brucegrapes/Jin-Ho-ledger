@@ -72,12 +72,25 @@ CREATE TABLE IF NOT EXISTS webauthn_challenges (
 );
 `;
 
+const createAuditLogs = `
+CREATE TABLE IF NOT EXISTS audit_logs (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id TEXT,
+  action TEXT NOT NULL,
+  ip_address TEXT,
+  user_agent TEXT,
+  metadata TEXT,
+  created_at TEXT NOT NULL
+);
+`;
+
 db.exec(createUsers);
 db.exec(createTransactions);
 db.exec(createBudgets);
 db.exec(createSessions);
 db.exec(createWebauthnCredentials);
 db.exec(createWebauthnChallenges);
+db.exec(createAuditLogs);
 
 function safeAddColumn(statement: string) {
   try {

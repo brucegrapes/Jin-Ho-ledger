@@ -2,6 +2,19 @@ import { NextRequest, NextResponse } from 'next/server';
 import db from '@/utils/db';
 import { decryptString } from '@/utils/serverEncryption';
 import { getUserFromRequest } from '@/utils/auth';
+import { writeAuditLog, extractRequestInfo, AuditAction } from '@/utils/auditLog';
+
+interface TransactionRow {
+  id: number;
+  date: string;
+  description: string | null;
+  category: string | null;
+  type: string | null;
+  tags: string | null;
+  amount: number;
+  reference_number: string | null;
+  user_id: string | null;
+}
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
@@ -9,8 +22,10 @@ export async function GET(req: NextRequest) {
   const start = searchParams.get('start');
   const end = searchParams.get('end');
 
+  const { ipAddress, userAgent } = extractRequestInfo(req);
   const auth = getUserFromRequest(req);
   if (!auth) {
+    writeAuditLog(null, AuditAction.UNAUTHENTICATED_ACCESS, ipAddress, userAgent, { endpoint: '/api/transactions' });
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
@@ -30,7 +45,7 @@ export async function GET(req: NextRequest) {
   }
   query += ' ORDER BY date DESC';
 
-  const transactions = db.prepare(query).all(...params) as any[];
+  const transactions = db.prepare(query).all(...params) as TransactionRow[];
   
   // Decrypt sensitive fields
   const decryptedTransactions = transactions.map(t => ({
@@ -38,6 +53,10 @@ export async function GET(req: NextRequest) {
     description: decryptString(t.description) || t.description,
     reference_number: decryptString(t.reference_number) || t.reference_number,
   }));
-  
+
+  writeAuditLog(auth.user.id, AuditAction.TRANSACTION_ACCESS, ipAddress, userAgent, {
+    count: decryptedTransactions.length,
+    filtered: !!(category || start || end),
+  });
   return NextResponse.json({ transactions: decryptedTransactions });
 }

@@ -2,11 +2,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import { verifyRegistrationResponse } from '@simplewebauthn/server';
 import db from '@/utils/db';
 import { applySessionCookie, clearChallenge, createSession, createUser, getChallenge, getUserByUsername, getOriginFromRequest, getRpIdFromRequest } from '@/utils/auth';
+import { writeAuditLog, extractRequestInfo, AuditAction } from '@/utils/auditLog';
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
   const username = typeof body.username === 'string' ? body.username.trim() : '';
   const credential = body.credential;
+
+  const { ipAddress, userAgent } = extractRequestInfo(req);
 
   if (!username || !credential) {
     return NextResponse.json({ error: 'Missing username or credential data' }, { status: 400 });
@@ -14,11 +17,13 @@ export async function POST(req: NextRequest) {
 
   const challenge = getChallenge(username);
   if (!challenge || challenge.type !== 'registration') {
+    writeAuditLog(null, AuditAction.AUTH_REGISTER_FAILURE, ipAddress, userAgent, { username, reason: 'no_challenge' });
     return NextResponse.json({ error: 'Registration challenge not found' }, { status: 400 });
   }
 
   if (getUserByUsername(username)) {
     clearChallenge(username);
+    writeAuditLog(null, AuditAction.AUTH_REGISTER_FAILURE, ipAddress, userAgent, { username, reason: 'username_taken' });
     return NextResponse.json({ error: 'Username already registered' }, { status: 409 });
   }
 
@@ -41,6 +46,7 @@ export async function POST(req: NextRequest) {
 
   if (!verification.verified || !verification.registrationInfo) {
     clearChallenge(username);
+    writeAuditLog(null, AuditAction.AUTH_REGISTER_FAILURE, ipAddress, userAgent, { username, reason: 'verification_failed' });
     return NextResponse.json({ error: 'Registration verification failed' }, { status: 400 });
   }
 
@@ -66,5 +72,6 @@ export async function POST(req: NextRequest) {
   const response = NextResponse.json({ success: true, user: { id: user.id, username: user.username } });
   applySessionCookie(response, session.id);
   clearChallenge(username);
+  writeAuditLog(user.id, AuditAction.AUTH_REGISTER_SUCCESS, ipAddress, userAgent, { username });
   return response;
 }
