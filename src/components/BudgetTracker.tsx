@@ -28,6 +28,7 @@ export default function BudgetTracker() {
   const [today] = useState(() => new Date().toISOString().slice(0, 10));
   const [isLoading, setIsLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
+  const [deletingId, setDeletingId] = useState<number | null>(null);
 
   const fetchBudgets = async () => {
     const res = await fetch('/api/budgets');
@@ -83,6 +84,22 @@ export default function BudgetTracker() {
       console.error('Error adding budget:', err);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleDelete = async (id: number) => {
+    if (!confirm('Remove this budget?')) return;
+    setDeletingId(id);
+    try {
+      const res = await fetch(`/api/budgets?id=${id}`, { method: 'DELETE', credentials: 'include' });
+      if (res.ok) {
+        setSuccessMessage('Budget removed.');
+        fetchBudgets();
+        fetchStatus();
+        setTimeout(() => setSuccessMessage(''), 3000);
+      }
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -276,6 +293,7 @@ export default function BudgetTracker() {
                   <th className="p-3 text-right text-xs font-semibold text-text-tertiary uppercase tracking-wider">Amount</th>
                   <th className="p-3 text-left text-xs font-semibold text-text-tertiary uppercase tracking-wider">Start Date</th>
                   <th className="p-3 text-left text-xs font-semibold text-text-tertiary uppercase tracking-wider">End Date</th>
+                  <th className="p-3"></th>
                 </tr>
               </thead>
               <tbody>
@@ -288,6 +306,16 @@ export default function BudgetTracker() {
                     <td className="p-3 text-right text-text-primary tabular-nums font-medium">₹{b.amount.toFixed(2)}</td>
                     <td className="p-3 text-text-secondary tabular-nums">{b.start_date}</td>
                     <td className="p-3 text-text-secondary tabular-nums">{b.end_date}</td>
+                    <td className="p-3 text-right">
+                      <button
+                        type="button"
+                        onClick={() => b.id !== undefined && handleDelete(b.id)}
+                        disabled={deletingId === b.id}
+                        className="text-xs font-medium text-error hover:text-error-light transition-colors disabled:opacity-40"
+                      >
+                        {deletingId === b.id ? 'Removing…' : 'Remove'}
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>

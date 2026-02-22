@@ -98,7 +98,7 @@ export default function ExcelUpload() {
           className="bg-primary text-white px-4 py-2.5 text-sm font-medium hover:bg-primary-light disabled:bg-surface-muted disabled:text-text-tertiary disabled:cursor-not-allowed transition-colors interactive-lift"
           style={{ borderRadius: 'var(--radius-sm)' }}
         >
-          {isLoading ? 'Processing...' : 'Upload & Process'}
+          {isLoading ? 'Processing...' : 'Upload & Securely Process'}
         </button>
       </div>
       
