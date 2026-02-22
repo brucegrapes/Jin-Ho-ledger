@@ -19,7 +19,7 @@ const AUTH_TAG_LENGTH = 16;
  */
 function getKey(): Buffer {
   const hash = crypto.createHash('sha256');
-  hash.update(ENCRYPTION_KEY);
+  hash.update(ENCRYPTION_KEY || '');
   return hash.digest();
 }
 

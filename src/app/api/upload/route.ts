@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { importCSV, importExcel, saveTransactions } from '@/utils/importer';
 import fs from 'fs';
 import path from 'path';
+import { getUserFromRequest } from '@/utils/auth';
 
 export const runtime = 'nodejs';
 
@@ -10,6 +11,11 @@ export async function POST(req: NextRequest) {
   const file = formData.get('file') as File;
   if (!file) {
     return NextResponse.json({ error: 'No file uploaded' }, { status: 400 });
+  }
+
+  const auth = getUserFromRequest(req);
+  if (!auth) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   // Save file to uploads folder
@@ -40,7 +46,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Save to database
-    const result = saveTransactions(transactions);
+    const result = saveTransactions(transactions, auth.user.id);
     
     // Clean up temp file
     fs.unlinkSync(tempPath);

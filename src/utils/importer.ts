@@ -87,8 +87,11 @@ export function importExcel(filePath: string): Transaction[] {
   }
 }
 
-export function saveTransactions(transactions: Transaction[]): { inserted: number; skipped: number; errors: string[] } {
-  const stmt = db.prepare('INSERT INTO transactions (date, description, category, type, tags, amount, reference_number) VALUES (?, ?, ?, ?, ?, ?, ?)');
+export function saveTransactions(
+  transactions: Transaction[],
+  userId?: string
+): { inserted: number; skipped: number; errors: string[] } {
+  const stmt = db.prepare('INSERT INTO transactions (date, description, category, type, tags, amount, reference_number, user_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
   const stmtCheck = db.prepare('SELECT id FROM transactions WHERE reference_number = ?');
   
   let inserted = 0;
@@ -118,7 +121,8 @@ export function saveTransactions(transactions: Transaction[]): { inserted: numbe
           t.type,
           JSON.stringify(t.tags),
           t.amount,
-          encryptedReference
+          encryptedReference,
+          userId || null
         );
         inserted++;
       } catch (err) {

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import db from '@/utils/db';
 import { decryptString } from '@/utils/serverEncryption';
+import { getUserFromRequest } from '@/utils/auth';
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
@@ -8,8 +9,13 @@ export async function GET(req: NextRequest) {
   const start = searchParams.get('start');
   const end = searchParams.get('end');
 
-  let query = 'SELECT * FROM transactions WHERE 1=1';
-  const params: string[] = [];
+  const auth = getUserFromRequest(req);
+  if (!auth) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  let query = 'SELECT * FROM transactions WHERE user_id = ?';
+  const params: (string | number)[] = [auth.user.id];
   if (category) {
     query += ' AND category = ?';
     params.push(category);
