@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { importCSV, importExcel, saveTransactions } from '@/utils/importer';
+import { DBCategoryRule, DBTagRule } from '@/utils/transactionExtractor';
+import db from '@/utils/db';
 import fs from 'fs';
 import path from 'path';
 import { getUserFromRequest } from '@/utils/auth';
@@ -35,10 +37,21 @@ export async function POST(req: NextRequest) {
 
   let transactions = [];
   try {
+    // Load user's DB rules (fall back to hardcoded if none exist)
+    const categoryRules = db
+      .prepare('SELECT category, keyword, match_type, priority FROM category_rules WHERE user_id = ? ORDER BY priority DESC')
+      .all(auth.user.id) as DBCategoryRule[];
+    const tagRules = db
+      .prepare('SELECT tag_name, pattern, match_type, priority FROM tag_rules WHERE user_id = ? ORDER BY priority DESC')
+      .all(auth.user.id) as DBTagRule[];
+    const rules = categoryRules.length > 0 || tagRules.length > 0
+      ? { categoryRules, tagRules }
+      : undefined; // fall back to hardcoded defaults if user has no rules yet
+
     if (ext === 'csv') {
-      transactions = importCSV(tempPath, bankType);
+      transactions = importCSV(tempPath, bankType, rules);
     } else if (ext === 'xlsx' || ext === 'xls') {
-      transactions = importExcel(tempPath, bankType);
+      transactions = importExcel(tempPath, bankType, rules);
     } else {
       fs.unlinkSync(tempPath);
       return NextResponse.json({ error: 'Unsupported file type' }, { status: 400 });

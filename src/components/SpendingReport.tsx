@@ -76,6 +76,8 @@ export default function SpendingReport() {
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [expandedChart, setExpandedChart] = useState<'category' | 'daily' | 'cumulative' | null>(null);
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [chartsOpen, setChartsOpen] = useState(true);
+  const [transactionsOpen, setTransactionsOpen] = useState(true);
   const [selectedTx, setSelectedTx] = useState<Transaction | null>(null);
 
   // Fetch transactions
@@ -431,7 +433,31 @@ export default function SpendingReport() {
       </div>
 
       {/* Charts — "What happened?" */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="trust-card">
+        <button
+          type="button"
+          onClick={() => setChartsOpen(v => !v)}
+          className="w-full flex items-center justify-between p-5 text-left hover:bg-surface-muted transition-colors"
+        >
+          <span className="text-base font-semibold text-text-primary flex items-center gap-2">
+            <svg className="w-4 h-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            </svg>
+            Analytics
+          </span>
+          <svg
+            className={`w-4 h-4 text-text-tertiary transition-transform duration-200 ${chartsOpen ? 'rotate-180' : ''}`}
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+
+        {chartsOpen && (
+          <div className="border-t border-border p-5">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Category Pie Chart */}
         {categorySummary.length > 0 && (
           <div className="trust-card p-6">
@@ -539,18 +565,46 @@ export default function SpendingReport() {
             </ResponsiveContainer>
           </div>
         )}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Transactions Table */}
-      <div className="trust-card p-6">
-        <div className="flex justify-between items-center mb-4 flex-wrap gap-2">
-          <h3 className="text-base font-semibold text-text-primary flex items-center gap-2">
+      <div className="trust-card">
+        <button
+          type="button"
+          onClick={() => setTransactionsOpen(v => !v)}
+          className="w-full flex items-center justify-between p-5 text-left hover:bg-surface-muted transition-colors"
+        >
+          <span className="text-base font-semibold text-text-primary flex items-center gap-2">
             <svg className="w-4 h-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
             </svg>
             Transactions
-          </h3>
-          <div className="flex gap-2">
+            {filteredTransactions.length > 0 && (
+              <span
+                className="ml-1 px-2 py-0.5 bg-surface-muted text-text-secondary text-xs font-semibold"
+                style={{ borderRadius: '999px' }}
+              >
+                {filteredTransactions.length}
+              </span>
+            )}
+          </span>
+          <svg
+            className={`w-4 h-4 text-text-tertiary transition-transform duration-200 ${transactionsOpen ? 'rotate-180' : ''}`}
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+
+        {transactionsOpen && (
+        <div className="border-t border-border px-5 pb-5">
+          {/* Sort controls */}
+          <div className="flex justify-end gap-2 pt-4 pb-2">
             <select
               value={sortBy}
               onChange={e => setSortBy(e.target.value as 'date' | 'amount' | 'category')}
@@ -569,7 +623,6 @@ export default function SpendingReport() {
               {sortOrder === 'asc' ? '↑' : '↓'}
             </button>
           </div>
-        </div>
 
         {/* Desktop table — fixed layout, no horizontal scroll */}
         <div className="hidden sm:block">
@@ -730,6 +783,8 @@ export default function SpendingReport() {
             </div>
           );
         })()}
+        </div>
+        )}
       </div>
 
       {/* Transaction Detail Modal */}

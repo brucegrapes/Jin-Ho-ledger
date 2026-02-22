@@ -13,6 +13,30 @@ export interface Transaction {
   reference_number?: string | null;
 }
 
+/** A row from the category_rules table (subset of columns needed here). */
+export interface DBCategoryRule {
+  category: string;
+  keyword: string;
+  match_type: string;
+  priority: number;
+}
+
+/** A row from the tag_rules table (subset of columns needed here). */
+export interface DBTagRule {
+  tag_name: string;
+  pattern: string;
+  match_type: string;
+  priority: number;
+}
+
+/** Optional DB-backed rules to override hardcoded defaults. */
+export interface ExtractionRules {
+  categoryRules?: DBCategoryRule[];
+  tagRules?: DBTagRule[];
+}
+
+// ─── Hardcoded fallback rules ─────────────────────────────────────────────────
+
 const CATEGORY_KEYWORDS: Record<string, string[]> = {
   'Investments': ['groww', 'stocks', 'mutual', 'share', 'mf'],
   'Coffee': ['coffee', 'cothas'],
@@ -33,6 +57,23 @@ const TRANSACTION_TYPE_PATTERNS: Record<string, string[]> = {
   'Check': ['chq'],
 };
 
+// ─── Matcher helper ───────────────────────────────────────────────────────────
+
+function matchesPattern(text: string, pattern: string, matchType: string): boolean {
+  const t = text.toLowerCase();
+  const p = pattern.toLowerCase();
+  switch (matchType) {
+    case 'startsWith': return t.startsWith(p);
+    case 'endsWith':   return t.endsWith(p);
+    case 'exact':      return t === p;
+    case 'regex': {
+      try { return new RegExp(p, 'i').test(t); } catch { return false; }
+    }
+    case 'contains':
+    default:           return t.includes(p);
+  }
+}
+
 /**
  * Extract transaction type based on description
  */
@@ -47,9 +88,22 @@ function extractTransactionType(description: string): string {
 }
 
 /**
- * Auto-categorize transaction based on description
+ * Auto-categorize transaction based on description.
+ * Uses DB rules when provided (sorted by priority desc), falls back to hardcoded.
  */
-function autoCategorize(description: string): string {
+function autoCategorize(description: string, dbRules?: DBCategoryRule[]): string {
+  if (dbRules && dbRules.length > 0) {
+    // Sort highest priority first (already done at query time, but be safe)
+    const sorted = [...dbRules].sort((a, b) => b.priority - a.priority);
+    for (const rule of sorted) {
+      if (matchesPattern(description, rule.keyword, rule.match_type)) {
+        return rule.category;
+      }
+    }
+    return 'Uncategorized';
+  }
+
+  // Hardcoded fallback
   const descLower = description.toLowerCase();
   for (const [category, keywords] of Object.entries(CATEGORY_KEYWORDS)) {
     if (keywords.some(keyword => descLower.includes(keyword))) {
@@ -60,14 +114,24 @@ function autoCategorize(description: string): string {
 }
 
 /**
- * Extract tags from transaction description
- * Tags are identifiers like GROWW, AUTOPAY, SALARY, etc.
+ * Extract tags from transaction description.
+ * Uses DB rules when provided, falls back to hardcoded patterns.
  */
-function extractTags(description: string): string[] {
+function extractTags(description: string, dbRules?: DBTagRule[]): string[] {
+  if (dbRules && dbRules.length > 0) {
+    const sorted = [...dbRules].sort((a, b) => b.priority - a.priority);
+    const tags: string[] = [];
+    for (const rule of sorted) {
+      if (matchesPattern(description, rule.pattern, rule.match_type)) {
+        tags.push(rule.tag_name.toUpperCase());
+      }
+    }
+    return Array.from(new Set(tags));
+  }
+
+  // Hardcoded fallback
   const tags: string[] = [];
   const descUpper = description.toUpperCase();
-  
-  // Pattern-based tags
   if (descUpper.includes('GROWW')) tags.push('GROWW');
   if (descUpper.includes('AUTOPAY')) tags.push('AUTOPAY');
   if (descUpper.includes('BILLPAY')) tags.push('BILLPAY');
@@ -79,15 +143,15 @@ function extractTags(description: string): string[] {
   if (descUpper.includes('SHUTTLE')) tags.push('SPORTS');
   if (descUpper.includes('GYFTR')) tags.push('GYFTR');
   if (descUpper.includes('GOLD')) tags.push('JEWELRY');
-  
-  return Array.from(new Set(tags)); // Remove duplicates
+
+  return Array.from(new Set(tags));
 }
 
 /**
  * Extract transactions from parsed bank statement records
  * Supports HDFC bank format with Withdrawal Amt. and Deposit Amt. columns
  */
-export function extractTransactions(records: Record<string, string>[]): Transaction[] {
+export function extractTransactions(records: Record<string, string>[], rules?: ExtractionRules): Transaction[] {
   return records
     .filter(row => {
       if (!row.Date || !row.Date.trim() || row.Date.includes('****')) return false;
@@ -121,9 +185,9 @@ export function extractTransactions(records: Record<string, string>[]): Transact
       return {
         date: toISODate(date),
         description,
-        category: autoCategorize(description),
+        category: autoCategorize(description, rules?.categoryRules),
         type: extractTransactionType(description),
-        tags: extractTags(description),
+        tags: extractTags(description, rules?.tagRules),
         amount: parseFloat(amount.toFixed(2)),
         reference_number: row['Chq./Ref.No.'] ? row['Chq./Ref.No.'].trim() : null,
       };
@@ -135,7 +199,7 @@ export function extractTransactions(records: Record<string, string>[]): Transact
  * Extract transactions from generic CSV/Excel records
  * Falls back when standard columns are not found
  */
-export function extractTransactionsFallback(records: Record<string, string>[]): Transaction[] {
+export function extractTransactionsFallback(records: Record<string, string>[], rules?: ExtractionRules): Transaction[] {
   return records
     .filter(row => {
       const hasDate = Object.keys(row).some(k => 
@@ -174,9 +238,9 @@ export function extractTransactionsFallback(records: Record<string, string>[]): 
       return {
         date: toISODate(date),
         description,
-        category: autoCategorize(description),
+        category: autoCategorize(description, rules?.categoryRules),
         type: extractTransactionType(description),
-        tags: extractTags(description),
+        tags: extractTags(description, rules?.tagRules),
         amount: parseFloat(amount.toFixed(2)),
         reference_number: refKey && row[refKey] ? row[refKey].trim() : null,
       };
@@ -231,7 +295,7 @@ function extractIOBReference(description: string): string | null {
  * Format: Date,Transaction Details,Debits,Credits,Balance
  * Example: "18-Feb-26","S45656391 Transfer UPI/118687461554/DR/Cothas Coffee","4.14","-","0.00"
  */
-function extractIOBTransactions(csvContent: string): Transaction[] {
+function extractIOBTransactions(csvContent: string, rules?: ExtractionRules): Transaction[] {
   const lines = csvContent.split('\n');
   const transactions: Transaction[] = [];
 
@@ -281,9 +345,9 @@ function extractIOBTransactions(csvContent: string): Transaction[] {
     transactions.push({
       date: toISODateIOB(dateStr),
       description,
-      category: autoCategorize(description),
+      category: autoCategorize(description, rules?.categoryRules),
       type: extractTransactionType(description),
-      tags: extractTags(description),
+      tags: extractTags(description, rules?.tagRules),
       amount: parseFloat(amount.toFixed(2)),
       reference_number: refNumber,
     });
@@ -305,7 +369,7 @@ function extractIOBTransactions(csvContent: string): Transaction[] {
  *   - Data rows: "DD-MMM-YY","S12345 Transfer UPI/...","amount","-","balance"
  *   - Clean CSV with quoted fields, no multi-line descriptions
  */
-export function extractIndianBankTransactions(csvContent: string): Transaction[] {
+export function extractIndianBankTransactions(csvContent: string, rules?: ExtractionRules): Transaction[] {
   const lines = csvContent.split('\n');
   const transactions: Transaction[] = [];
 
@@ -315,7 +379,7 @@ export function extractIndianBankTransactions(csvContent: string): Transaction[]
 
   if (isIOBFormat) {
     // Parse IOB CSV format (clean CSV with quoted fields)
-    return extractIOBTransactions(csvContent);
+    return extractIOBTransactions(csvContent, rules);
   }
 
   // Temporary storage for building multi-line transactions
@@ -348,9 +412,9 @@ export function extractIndianBankTransactions(csvContent: string): Transaction[]
     transactions.push({
       date: toISODateLong(currentDate),
       description,
-      category: autoCategorize(description),
+      category: autoCategorize(description, rules?.categoryRules),
       type: extractTransactionType(description),
-      tags: extractTags(description),
+      tags: extractTags(description, rules?.tagRules),
       amount: parseFloat(amount.toFixed(2)),
       reference_number: refNumber,
     });
@@ -407,4 +471,18 @@ export function extractIndianBankTransactions(csvContent: string): Transaction[]
   flushTransaction();
 
   return transactions;
+}
+
+/**
+ * Re-apply category and tag rules to a plain description string.
+ * Used by the retag endpoint to update existing transactions.
+ */
+export function applyRulesToDescription(
+  description: string,
+  rules: ExtractionRules
+): { category: string; tags: string[] } {
+  return {
+    category: autoCategorize(description, rules.categoryRules),
+    tags: extractTags(description, rules.tagRules),
+  };
 }

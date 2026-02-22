@@ -84,6 +84,33 @@ CREATE TABLE IF NOT EXISTS audit_logs (
 );
 `;
 
+const createCategoryRules = `
+CREATE TABLE IF NOT EXISTS category_rules (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id TEXT NOT NULL,
+  category TEXT NOT NULL,
+  keyword TEXT NOT NULL,
+  match_type TEXT NOT NULL DEFAULT 'contains',
+  priority INTEGER NOT NULL DEFAULT 0,
+  color TEXT,
+  created_at TEXT NOT NULL,
+  FOREIGN KEY (user_id) REFERENCES users(id)
+);
+`;
+
+const createTagRules = `
+CREATE TABLE IF NOT EXISTS tag_rules (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id TEXT NOT NULL,
+  tag_name TEXT NOT NULL,
+  pattern TEXT NOT NULL,
+  match_type TEXT NOT NULL DEFAULT 'contains',
+  priority INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL,
+  FOREIGN KEY (user_id) REFERENCES users(id)
+);
+`;
+
 db.exec(createUsers);
 db.exec(createTransactions);
 db.exec(createBudgets);
@@ -91,6 +118,8 @@ db.exec(createSessions);
 db.exec(createWebauthnCredentials);
 db.exec(createWebauthnChallenges);
 db.exec(createAuditLogs);
+db.exec(createCategoryRules);
+db.exec(createTagRules);
 
 function safeAddColumn(statement: string) {
   try {

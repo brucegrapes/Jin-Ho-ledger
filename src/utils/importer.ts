@@ -2,7 +2,7 @@ import db from './db';
 import { parse } from 'csv-parse/sync';
 import fs from 'fs';
 import * as xlsx from 'xlsx';
-import { extractTransactions, extractTransactionsFallback, extractIndianBankTransactions } from './transactionExtractor';
+import { extractTransactions, extractTransactionsFallback, extractIndianBankTransactions, ExtractionRules } from './transactionExtractor';
 import { encryptString } from './serverEncryption';
 
 export interface Transaction {
@@ -36,11 +36,11 @@ function findAndExtractData(csvContent: string) {
   return csvContent;
 }
 
-export function importCSV(filePath: string, bankType: string = 'hdfc'): Transaction[] {
+export function importCSV(filePath: string, bankType: string = 'hdfc', rules?: ExtractionRules): Transaction[] {
   const content = fs.readFileSync(filePath, 'utf-8');
 
   if (bankType === 'indian_bank' || bankType === 'iob') {
-    return extractIndianBankTransactions(content);
+    return extractIndianBankTransactions(content, rules);
   }
 
   const dataContent = findAndExtractData(content);
@@ -50,17 +50,17 @@ export function importCSV(filePath: string, bankType: string = 'hdfc'): Transact
   });
   
   // Try HDFC-specific extraction first
-  let transactions = extractTransactions(records);
+  let transactions = extractTransactions(records, rules);
   
   // If no transactions, try fallback extraction
   if (transactions.length === 0) {
-    transactions = extractTransactionsFallback(records);
+    transactions = extractTransactionsFallback(records, rules);
   }
   
   return transactions;
 }
 
-export function importExcel(filePath: string, bankType: string = 'hdfc'): Transaction[] {
+export function importExcel(filePath: string, bankType: string = 'hdfc', rules?: ExtractionRules): Transaction[] {
   if (!fs.existsSync(filePath)) {
     throw new Error(`File does not exist: ${filePath}`);
   }
@@ -74,7 +74,7 @@ export function importExcel(filePath: string, bankType: string = 'hdfc'): Transa
     const csv = xlsx.utils.sheet_to_csv(sheet);
 
     if (bankType === 'indian_bank' || bankType === 'iob') {
-      return extractIndianBankTransactions(csv);
+      return extractIndianBankTransactions(csv, rules);
     }
 
     const dataContent = findAndExtractData(csv);
@@ -84,11 +84,11 @@ export function importExcel(filePath: string, bankType: string = 'hdfc'): Transa
     });
     
     // Try HDFC-specific extraction first
-    let transactions = extractTransactions(json);
+    let transactions = extractTransactions(json, rules);
     
     // If no transactions, try fallback extraction
     if (transactions.length === 0) {
-      transactions = extractTransactionsFallback(json);
+      transactions = extractTransactionsFallback(json, rules);
     }
     
     return transactions;

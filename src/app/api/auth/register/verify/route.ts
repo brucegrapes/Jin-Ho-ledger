@@ -3,6 +3,7 @@ import { verifyRegistrationResponse } from '@simplewebauthn/server';
 import db from '@/utils/db';
 import { applySessionCookie, clearChallenge, createSession, createUser, getChallenge, getUserByUsername, getOriginFromRequest, getRpIdFromRequest } from '@/utils/auth';
 import { writeAuditLog, extractRequestInfo, AuditAction } from '@/utils/auditLog';
+import { seedDefaultsForUser } from '@/utils/seedDefaults';
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
@@ -54,6 +55,7 @@ export async function POST(req: NextRequest) {
   const publicKey = Buffer.from(registeredCredential.publicKey).toString('base64');
 
   const user = createUser(challenge.userId, username);
+  seedDefaultsForUser(user.id);
 
   db.prepare(
     'INSERT INTO webauthn_credentials (user_id, credential_id, public_key, counter, device_type, transports, backed_up, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
