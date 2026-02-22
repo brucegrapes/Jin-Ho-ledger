@@ -134,5 +134,7 @@ function safeAddColumn(statement: string) {
 
 safeAddColumn('ALTER TABLE transactions ADD COLUMN user_id TEXT');
 safeAddColumn('ALTER TABLE budgets ADD COLUMN user_id TEXT');
+safeAddColumn('ALTER TABLE budgets ADD COLUMN recurring INTEGER DEFAULT 0');
+safeAddColumn("ALTER TABLE budgets ADD COLUMN tag TEXT");
 
 export default db;
