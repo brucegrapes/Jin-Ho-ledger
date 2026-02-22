@@ -10,35 +10,62 @@ export default async function Home() {
 
   if (!session) {
     return (
-      <main className="w-full min-h-screen bg-white dark:bg-black">
-        <div className="max-w-3xl mx-auto px-4 py-24 text-center space-y-6">
-          <h1 className="text-4xl font-bold text-black dark:text-zinc-50">Welcome back</h1>
-          <p className="text-lg text-gray-600 dark:text-gray-300">
-            Log in with WebAuthn to unlock your personal dashboard and keep your data safe with biometric or security-key authentication.
-          </p>
+      <main className="w-full min-h-screen bg-background">
+        <div className="max-w-xl mx-auto px-6 py-28 text-center space-y-8">
+          {/* Trust-centered icon */}
+          <div className="w-16 h-16 mx-auto rounded-2xl bg-primary-surface flex items-center justify-center" style={{ boxShadow: 'var(--shadow-md)' }}>
+            <svg className="w-8 h-8 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+            </svg>
+          </div>
+          <div className="space-y-3">
+            <h1 className="text-3xl font-semibold text-text-primary tracking-tight">Welcome to Monark Vaulet</h1>
+            <p className="text-base text-text-secondary leading-relaxed max-w-md mx-auto">
+              Sign in with WebAuthn to access your personal dashboard. Your data is protected with biometric or security-key authentication.
+            </p>
+          </div>
           <div className="flex items-center justify-center gap-4">
             <Link
               href="/login"
-              className="px-6 py-3 bg-blue-600 text-white rounded-lg text-sm font-semibold transition hover:bg-blue-700"
+              className="px-6 py-3 bg-primary text-white text-sm font-semibold transition-colors hover:bg-primary-light interactive-lift"
+              style={{ borderRadius: 'var(--radius-sm)' }}
             >
-              Login
+              Sign in
             </Link>
             <Link
               href="/register"
-              className="px-6 py-3 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-semibold text-gray-700 dark:text-gray-200 transition hover:border-gray-500"
+              className="px-6 py-3 border border-border text-sm font-semibold text-text-secondary transition-colors hover:border-primary hover:text-primary"
+              style={{ borderRadius: 'var(--radius-sm)' }}
             >
-              Register
+              Create account
             </Link>
           </div>
+          <p className="secure-badge justify-center pt-2">
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+            </svg>
+            End-to-end encrypted &middot; Your data stays private
+          </p>
         </div>
       </main>
     );
   }
 
   return (
-    <main className="w-full min-h-screen bg-white dark:bg-black">
-      <div className="max-w-7xl mx-auto px-4 py-12 sm:px-6 lg:px-8">
-        <h1 className="text-4xl font-bold mb-10 text-black dark:text-zinc-50">Dashboard</h1>
+    <main className="w-full min-h-screen bg-background">
+      <div className="max-w-7xl mx-auto px-6 py-10 sm:px-8 lg:px-10">
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h1 className="text-2xl font-semibold text-text-primary tracking-tight">Dashboard</h1>
+            <p className="text-sm text-text-tertiary mt-1">Your financial overview at a glance</p>
+          </div>
+          <span className="secure-badge">
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+            </svg>
+            Securely encrypted
+          </span>
+        </div>
         <HomeDashboard />
       </div>
     </main>

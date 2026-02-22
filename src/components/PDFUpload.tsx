@@ -14,17 +14,18 @@ const PDFUpload: React.FC<PDFUploadProps> = ({ onFileSelected }) => {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center p-4 border rounded-md">
+    <div className="flex flex-col items-center justify-center p-6 border border-dashed border-border bg-surface-muted" style={{ borderRadius: 'var(--radius-md)' }}>
       <input
         ref={inputRef}
         type="file"
         accept="application/pdf"
         onChange={handleFileChange}
-        className="mb-2"
+        className="mb-3 text-sm text-text-secondary"
       />
       <button
         type="button"
-        className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+        className="px-4 py-2 bg-primary text-white text-sm font-medium hover:bg-primary-light transition-colors interactive-lift"
+        style={{ borderRadius: 'var(--radius-sm)' }}
         onClick={() => inputRef.current?.click()}
       >
         Upload PDF

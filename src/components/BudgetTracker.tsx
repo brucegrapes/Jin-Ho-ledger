@@ -93,19 +93,25 @@ export default function BudgetTracker() {
   return (
     <div className="space-y-6">
       {/* Add Budget Form */}
-      <div className="bg-white dark:bg-zinc-900 rounded-lg p-6 shadow-md">
-        <h3 className="text-lg font-semibold mb-4 text-black dark:text-white">➕ Create Budget</h3>
+      <div className="bg-surface-muted border border-border-light p-6" style={{ borderRadius: 'var(--radius-md)' }}>
+        <h3 className="text-base font-semibold mb-4 text-text-primary flex items-center gap-2">
+          <svg className="w-4 h-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+          </svg>
+          Create Budget
+        </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
           <div>
-            <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
+            <label className="block text-sm font-medium mb-1.5 text-text-secondary">
               Category
             </label>
             <select
               value={category}
               onChange={e => setCategory(e.target.value)}
-              className="w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2 dark:bg-zinc-800 dark:text-white"
+              className="w-full border border-border bg-surface text-text-primary px-3 py-2.5 text-sm focus:ring-2 focus:ring-primary/20"
+              style={{ borderRadius: 'var(--radius-sm)' }}
             >
-              <option value="">Select or type category</option>
+              <option value="">Select category</option>
               {categories.map(cat => (
                 <option key={cat} value={cat}>
                   {cat}
@@ -115,7 +121,7 @@ export default function BudgetTracker() {
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
+            <label className="block text-sm font-medium mb-1.5 text-text-secondary">
               Amount (₹)
             </label>
             <input
@@ -123,51 +129,63 @@ export default function BudgetTracker() {
               value={amount}
               onChange={e => setAmount(e.target.value)}
               placeholder="5000"
-              className="w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2 dark:bg-zinc-800 dark:text-white"
+              className="w-full border border-border bg-surface text-text-primary px-3 py-2.5 text-sm tabular-nums"
+              style={{ borderRadius: 'var(--radius-sm)' }}
             />
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
+            <label className="block text-sm font-medium mb-1.5 text-text-secondary">
               Start Date
             </label>
             <input
               type="date"
               value={start}
               onChange={e => setStart(e.target.value)}
-              className="w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2 dark:bg-zinc-800 dark:text-white"
+              className="w-full border border-border bg-surface text-text-primary px-3 py-2.5 text-sm"
+              style={{ borderRadius: 'var(--radius-sm)' }}
             />
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
+            <label className="block text-sm font-medium mb-1.5 text-text-secondary">
               End Date
             </label>
             <input
               type="date"
               value={end}
               onChange={e => setEnd(e.target.value)}
-              className="w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2 dark:bg-zinc-800 dark:text-white"
+              className="w-full border border-border bg-surface text-text-primary px-3 py-2.5 text-sm"
+              style={{ borderRadius: 'var(--radius-sm)' }}
             />
           </div>
           <div className="flex items-end">
             <button
               onClick={handleAdd}
               disabled={isLoading}
-              className="w-full bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded font-medium disabled:opacity-50"
+              className="w-full bg-primary hover:bg-primary-light text-white px-4 py-2.5 font-medium text-sm disabled:opacity-50 transition-colors interactive-lift"
+              style={{ borderRadius: 'var(--radius-sm)' }}
             >
               {isLoading ? 'Adding...' : 'Add Budget'}
             </button>
           </div>
         </div>
         {successMessage && (
-          <div className="mt-4 p-3 bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-300 rounded">
-            ✅ {successMessage}
+          <div className="mt-4 p-3 bg-accent-surface text-accent border border-accent/20 text-sm font-medium flex items-center gap-2" style={{ borderRadius: 'var(--radius-sm)' }}>
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+            {successMessage}
           </div>
         )}
       </div>
 
       {/* Today's Budget Status Cards */}
       <div>
-        <h3 className="text-lg font-semibold mb-4 text-black dark:text-white">📅 Today&apos;s Budget Status</h3>
+        <h3 className="text-base font-semibold mb-4 text-text-primary flex items-center gap-2">
+          <svg className="w-4 h-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          </svg>
+          Today&apos;s Budget Status
+        </h3>
         {status.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {status.map((s, i) => {
@@ -176,43 +194,46 @@ export default function BudgetTracker() {
               return (
                 <div
                   key={i}
-                  className={`rounded-lg p-6 shadow-md ${getStatusBgColor(s.spent, s.budget)} border-l-4 ${
-                    percentage <= 50
-                      ? 'border-green-500'
-                      : percentage <= 80
-                        ? 'border-yellow-500'
-                        : 'border-red-500'
-                  }`}
+                  className="trust-card p-5 interactive-lift"
+                  style={{
+                    borderLeft: `3px solid ${percentage <= 50 ? 'var(--accent)' : percentage <= 80 ? 'var(--warning)' : 'var(--error)'}`,
+                  }}
                 >
-                  <div className="flex justify-between items-start mb-2">
-                    <h4 className="font-semibold text-black dark:text-white">{s.category}</h4>
-                    <span className="text-xs font-medium px-2 py-1 rounded bg-white dark:bg-zinc-800">
+                  <div className="flex justify-between items-start mb-3">
+                    <h4 className="font-semibold text-text-primary text-sm">{s.category}</h4>
+                    <span
+                      className="text-xs font-semibold px-2 py-0.5 tabular-nums"
+                      style={{
+                        borderRadius: 'var(--radius-sm)',
+                        backgroundColor: percentage <= 50 ? 'var(--accent-surface)' : percentage <= 80 ? 'var(--warning-surface)' : 'var(--error-surface)',
+                        color: percentage <= 50 ? 'var(--accent)' : percentage <= 80 ? 'var(--warning)' : 'var(--error)',
+                      }}
+                    >
                       {percentage.toFixed(0)}%
                     </span>
                   </div>
-                  <div className="space-y-2">
-                    <div className="w-full bg-gray-300 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
+                  <div className="space-y-3">
+                    <div className="w-full bg-surface-muted h-2 overflow-hidden" style={{ borderRadius: '4px' }}>
                       <div
-                        className={`h-full transition-all ${getStatusColor(s.spent, s.budget)}`}
-                        style={{ width: `${percentage}%` }}
+                        className="h-full progress-fill"
+                        style={{
+                          width: `${percentage}%`,
+                          backgroundColor: percentage <= 50 ? 'var(--accent)' : percentage <= 80 ? 'var(--warning)' : 'var(--error)',
+                        }}
                       />
                     </div>
-                    <div className="text-sm space-y-1">
-                      <div className="flex justify-between text-gray-600 dark:text-gray-400">
-                        <span>Spent:</span>
-                        <span className="font-medium text-gray-900 dark:text-gray-100">₹{s.spent.toFixed(2)}</span>
+                    <div className="text-sm space-y-1.5">
+                      <div className="flex justify-between text-text-secondary">
+                        <span>Spent</span>
+                        <span className="font-medium text-text-primary tabular-nums">₹{s.spent.toFixed(2)}</span>
                       </div>
-                      <div className="flex justify-between text-gray-600 dark:text-gray-400">
-                        <span>Budget:</span>
-                        <span className="font-medium text-gray-900 dark:text-gray-100">₹{s.budget.toFixed(2)}</span>
+                      <div className="flex justify-between text-text-secondary">
+                        <span>Budget</span>
+                        <span className="font-medium text-text-primary tabular-nums">₹{s.budget.toFixed(2)}</span>
                       </div>
-                      <div
-                        className={`flex justify-between font-semibold ${
-                          isOverBudget ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'
-                        }`}
-                      >
-                        <span>Remaining:</span>
-                        <span>₹{s.remaining.toFixed(2)}</span>
+                      <div className="flex justify-between font-semibold pt-1 border-t border-border-light">
+                        <span className={isOverBudget ? 'text-error' : 'text-accent'}>Remaining</span>
+                        <span className={`tabular-nums ${isOverBudget ? 'text-error' : 'text-accent'}`}>₹{s.remaining.toFixed(2)}</span>
                       </div>
                     </div>
                   </div>
@@ -221,36 +242,41 @@ export default function BudgetTracker() {
             })}
           </div>
         ) : (
-          <div className="bg-gray-100 dark:bg-zinc-800 rounded-lg p-6 text-center text-gray-600 dark:text-gray-400">
-            No active budgets for today. Create one to get started!
+          <div className="bg-surface-muted border border-border-light p-8 text-center text-text-tertiary text-sm" style={{ borderRadius: 'var(--radius-md)' }}>
+            No active budgets for today. Create one above to get started.
           </div>
         )}
       </div>
 
       {/* All Budgets Table */}
       {budgets.length > 0 && (
-        <div className="bg-white dark:bg-zinc-900 rounded-lg p-6 shadow-md">
-          <h3 className="text-lg font-semibold mb-4 text-black dark:text-white">📊 All Budgets</h3>
+        <div className="trust-card p-6">
+          <h3 className="text-base font-semibold mb-4 text-text-primary flex items-center gap-2">
+            <svg className="w-4 h-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+            </svg>
+            All Budgets
+          </h3>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="bg-gray-100 dark:bg-zinc-800 border-b border-gray-300 dark:border-gray-700">
-                  <th className="p-3 text-left font-semibold text-gray-700 dark:text-gray-300">Category</th>
-                  <th className="p-3 text-right font-semibold text-gray-700 dark:text-gray-300">Amount</th>
-                  <th className="p-3 text-left font-semibold text-gray-700 dark:text-gray-300">Start Date</th>
-                  <th className="p-3 text-left font-semibold text-gray-700 dark:text-gray-300">End Date</th>
+                <tr className="border-b border-border">
+                  <th className="p-3 text-left text-xs font-semibold text-text-tertiary uppercase tracking-wider">Category</th>
+                  <th className="p-3 text-right text-xs font-semibold text-text-tertiary uppercase tracking-wider">Amount</th>
+                  <th className="p-3 text-left text-xs font-semibold text-text-tertiary uppercase tracking-wider">Start Date</th>
+                  <th className="p-3 text-left text-xs font-semibold text-text-tertiary uppercase tracking-wider">End Date</th>
                 </tr>
               </thead>
               <tbody>
                 {budgets.map((b, i) => (
                   <tr
                     key={i}
-                    className="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-zinc-800"
+                    className="border-b border-border-light hover:bg-surface-muted transition-colors"
                   >
-                    <td className="p-3 font-medium text-gray-900 dark:text-gray-100">{b.category}</td>
-                    <td className="p-3 text-right text-gray-900 dark:text-gray-100">₹{b.amount.toFixed(2)}</td>
-                    <td className="p-3 text-gray-700 dark:text-gray-300">{b.start_date}</td>
-                    <td className="p-3 text-gray-700 dark:text-gray-300">{b.end_date}</td>
+                    <td className="p-3 font-medium text-text-primary">{b.category}</td>
+                    <td className="p-3 text-right text-text-primary tabular-nums font-medium">₹{b.amount.toFixed(2)}</td>
+                    <td className="p-3 text-text-secondary tabular-nums">{b.start_date}</td>
+                    <td className="p-3 text-text-secondary tabular-nums">{b.end_date}</td>
                   </tr>
                 ))}
               </tbody>

@@ -56,45 +56,69 @@ export default function ExcelUpload() {
 
   return (
     <div className="w-full space-y-4">
-      <div className="bg-blue-50 dark:bg-blue-900 border border-blue-200 dark:border-blue-700 rounded p-4">
-        <p className="text-sm text-blue-800 dark:text-blue-200">
-          <strong>🔒 Encryption Enabled:</strong> All sensitive data (description & reference numbers) will be automatically encrypted and stored securely.
+      <div className="bg-accent-surface border border-accent/15 p-4 flex items-start gap-3" style={{ borderRadius: 'var(--radius-sm)' }}>
+        <svg className="w-4 h-4 text-accent mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+        </svg>
+        <p className="text-sm text-accent leading-relaxed">
+          <strong>Encryption Enabled:</strong> All sensitive data (description & reference numbers) will be automatically encrypted and stored securely.
         </p>
       </div>
 
-      <div className="flex flex-col gap-3 mb-4">
+      <div className="flex flex-col gap-3">
         <input 
           type="file" 
           accept=".csv,.xlsx,.xls" 
           onChange={handleChange}
           disabled={isLoading}
-          className="border border-gray-300 p-2 rounded dark:border-gray-600 dark:bg-zinc-800 dark:text-white"
+          className="border border-border bg-surface text-text-primary p-2.5 text-sm file:mr-4 file:py-1.5 file:px-3 file:border-0 file:text-sm file:font-medium file:bg-primary-surface file:text-primary hover:file:bg-primary/10"
+          style={{ borderRadius: 'var(--radius-sm)' }}
         />
 
         <button 
           onClick={handleUpload} 
           disabled={!file || isLoading}
-          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+          className="bg-primary text-white px-4 py-2.5 text-sm font-medium hover:bg-primary-light disabled:bg-surface-muted disabled:text-text-tertiary disabled:cursor-not-allowed transition-colors interactive-lift"
+          style={{ borderRadius: 'var(--radius-sm)' }}
         >
           {isLoading ? 'Processing...' : 'Upload & Process'}
         </button>
       </div>
       
       {message && (
-        <div className={`p-3 rounded mb-4 ${message.includes('✅') ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'}`}>
-          {message}
+        <div className={`p-3 text-sm font-medium flex items-center gap-2 ${message.includes('Successfully') ? 'bg-accent-surface text-accent border border-accent/15' : 'bg-error-surface text-error border border-error/15'}`} style={{ borderRadius: 'var(--radius-sm)' }}>
+          {message.includes('Successfully') ? (
+            <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+          ) : (
+            <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          )}
+          {message.replace(/[✅❌] /, '')}
         </div>
       )}
       
       {response && response.success && (
-        <div className="bg-blue-50 dark:bg-blue-900 p-3 rounded text-sm">
-          <p className="font-semibold">📊 Import Summary</p>
-          <p>File: {response.fileName}</p>
-          {response.count && <p>Transactions: {response.count}</p>}
-          {response.inserted && <p>Inserted: {response.inserted}</p>}
-          {response.skipped ? <p>Skipped (duplicates): {response.skipped}</p> : null}
-          {response.jsonFile && <p>Parsed JSON: {response.jsonFile}</p>}
-          <p className="mt-2">🔐 All sensitive data encrypted with server key</p>
+        <div className="bg-primary-surface border border-primary/15 p-4 text-sm space-y-1" style={{ borderRadius: 'var(--radius-sm)' }}>
+          <p className="font-semibold text-primary flex items-center gap-2">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+            </svg>
+            Import Summary
+          </p>
+          <p className="text-text-secondary">File: {response.fileName}</p>
+          {response.count && <p className="text-text-secondary tabular-nums">Transactions: {response.count}</p>}
+          {response.inserted && <p className="text-text-secondary tabular-nums">Inserted: {response.inserted}</p>}
+          {response.skipped ? <p className="text-text-secondary tabular-nums">Skipped (duplicates): {response.skipped}</p> : null}
+          {response.jsonFile && <p className="text-text-secondary">Parsed JSON: {response.jsonFile}</p>}
+          <p className="mt-2 text-primary font-medium flex items-center gap-1">
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+            </svg>
+            All sensitive data encrypted
+          </p>
         </div>
       )}
     </div>

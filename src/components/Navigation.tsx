@@ -34,48 +34,59 @@ export default function Navigation() {
   };
 
   return (
-    <nav className="bg-white dark:bg-zinc-900 border-b border-gray-200 dark:border-gray-700 shadow-sm">
-      <div className="px-4 py-4 flex justify-between items-center">
-        <Link href="/">
-          <h1 className="text-2xl font-bold text-black dark:text-white cursor-pointer hover:text-blue-600 dark:hover:text-blue-400">
-            📊 MyLedger
-          </h1>
+    <nav className="bg-surface border-b border-border" style={{ boxShadow: 'var(--shadow-sm)' }}>
+      <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
+        <Link href="/" className="flex items-center gap-2 group">
+          <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
+            <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+            </svg>
+          </div>
+          <span className="text-xl font-semibold text-text-primary group-hover:text-primary transition-colors">
+            Monark
+          </span>
         </Link>
-        <div className="flex items-center gap-6">
+        <div className="flex items-center gap-8">
           <Link
             href="/"
-            className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition-colors"
+            className="text-sm font-medium text-text-secondary hover:text-primary transition-colors"
           >
             Dashboard
           </Link>
           <Link
             href="/upload"
-            className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition-colors"
+            className="text-sm font-medium text-text-secondary hover:text-primary transition-colors"
           >
             Upload
           </Link>
           {user ? (
-            <div className="flex items-center gap-3">
-              <span className="text-sm text-gray-700 dark:text-gray-300">Hi, {user.username}</span>
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-full bg-primary-surface flex items-center justify-center">
+                  <span className="text-xs font-semibold text-primary">{user.username.charAt(0).toUpperCase()}</span>
+                </div>
+                <span className="text-sm font-medium text-text-primary">{user.username}</span>
+              </div>
               <button
                 type="button"
                 onClick={handleLogout}
-                className="text-sm font-medium text-red-600 dark:text-red-400 hover:text-red-700 transition"
+                className="text-sm font-medium text-text-tertiary hover:text-error transition-colors"
               >
-                Logout
+                Sign out
               </button>
             </div>
           ) : (
-            <div className="flex gap-3">
+            <div className="flex items-center gap-3">
               <Link
                 href="/login"
-                className="text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition"
+                className="text-sm font-medium text-text-secondary hover:text-primary transition-colors"
               >
                 Login
               </Link>
               <Link
                 href="/register"
-                className="text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition"
+                className="px-4 py-2 bg-primary text-white text-sm font-medium hover:bg-primary-light transition-colors"
+                style={{ borderRadius: 'var(--radius-sm)' }}
               >
                 Register
               </Link>

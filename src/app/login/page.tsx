@@ -55,36 +55,55 @@ export default function LoginPage() {
   };
 
   return (
-    <main className="w-full min-h-screen bg-white dark:bg-black">
-      <div className="max-w-md mx-auto px-4 py-12">
-        <h1 className="text-3xl font-bold text-center text-black dark:text-white">Login with WebAuthn</h1>
-        <p className="text-center text-gray-600 dark:text-gray-300 mt-2">
-          Authenticate with your biometric key or security token to unlock the dashboard.
-        </p>
-        <form onSubmit={handleSubmit} className="mt-8 space-y-4 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-gray-800 rounded-lg p-6 shadow">
-          <label className="block text-sm font-semibold text-gray-700 dark:text-gray-200">
+    <main className="w-full min-h-screen bg-background">
+      <div className="max-w-md mx-auto px-6 py-16">
+        <div className="text-center mb-8">
+          <div className="w-12 h-12 mx-auto rounded-xl bg-primary-surface flex items-center justify-center mb-4" style={{ boxShadow: 'var(--shadow-sm)' }}>
+            <svg className="w-6 h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+            </svg>
+          </div>
+          <h1 className="text-2xl font-semibold text-text-primary tracking-tight">Welcome back</h1>
+          <p className="text-sm text-text-secondary mt-2 leading-relaxed">
+            Authenticate with your biometric key or security token.
+          </p>
+        </div>
+        <form onSubmit={handleSubmit} className="trust-card p-6 space-y-5">
+          <label className="block text-sm font-medium text-text-secondary">
             Username
             <input
               value={username}
               onChange={e => setUsername(e.target.value)}
-              className="mt-1 block w-full border border-gray-300 dark:border-gray-700 rounded px-3 py-2 bg-white dark:bg-zinc-900 text-gray-900 dark:text-gray-100"
+              className="mt-1.5 block w-full border border-border bg-surface text-text-primary px-3 py-2.5 text-sm"
+              style={{ borderRadius: 'var(--radius-sm)' }}
             />
           </label>
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full bg-blue-600 text-white py-2 rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-60"
+            className="w-full bg-primary text-white py-2.5 font-semibold text-sm hover:bg-primary-light disabled:opacity-60 transition-colors interactive-lift"
+            style={{ borderRadius: 'var(--radius-sm)' }}
           >
-            {isLoading ? 'Authenticating...' : 'Login'}
+            {isLoading ? 'Authenticating...' : 'Sign in'}
           </button>
-          {status && <p className="text-sm text-center text-red-600 dark:text-red-400">{status}</p>}
-          <p className="text-sm text-center text-gray-600 dark:text-gray-400">
+          {status && (
+            <div className="p-3 bg-error-surface text-error text-sm text-center font-medium" style={{ borderRadius: 'var(--radius-sm)' }}>
+              {status}
+            </div>
+          )}
+          <p className="text-sm text-center text-text-tertiary">
             Need to register a credential?{' '}
-            <Link href="/register" className="text-blue-600 dark:text-blue-400 font-semibold">
+            <Link href="/register" className="text-primary font-semibold hover:text-primary-light transition-colors">
               Create one now
             </Link>
           </p>
         </form>
+        <p className="secure-badge justify-center mt-6">
+          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+          </svg>
+          Passwordless authentication
+        </p>
       </div>
     </main>
   );

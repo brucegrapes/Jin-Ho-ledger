@@ -1,26 +1,177 @@
 @import "tailwindcss";
 
+/* ─── Psychology-Based Design System ───
+   Trust (blue) · Clarity (hierarchy) · Control (whitespace) · Low cognitive load
+   Base: #F7F9FC · Primary: #1F4E79 · Accent: #2E7D32 · Error: #C62828
+*/
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Surface & Text */
+  --background: #F7F9FC;
+  --foreground: #1a2332;
+  --surface: #ffffff;
+  --surface-elevated: #ffffff;
+  --surface-muted: #EEF2F7;
+
+  /* Primary – Deep Trust Blue */
+  --primary: #1F4E79;
+  --primary-light: #2A6499;
+  --primary-dark: #163A5C;
+  --primary-surface: #E8F0F8;
+
+  /* Accent – Muted Growth Green */
+  --accent: #2E7D32;
+  --accent-light: #43A047;
+  --accent-surface: #E8F5E9;
+
+  /* Error – Soft Red (warnings only) */
+  --error: #C62828;
+  --error-light: #E53935;
+  --error-surface: #FFEBEE;
+
+  /* Warning – Subdued Amber */
+  --warning: #E65100;
+  --warning-surface: #FFF3E0;
+
+  /* Neutral palette */
+  --border: #DDE3EC;
+  --border-light: #EEF2F7;
+  --text-primary: #1a2332;
+  --text-secondary: #4A5568;
+  --text-tertiary: #8896A6;
+
+  /* Shadows (soft, never harsh) */
+  --shadow-sm: 0 1px 3px rgba(15, 30, 60, 0.06);
+  --shadow-md: 0 4px 12px rgba(15, 30, 60, 0.08);
+  --shadow-lg: 0 8px 24px rgba(15, 30, 60, 0.10);
+
+  /* Radii (rounded = safe, approachable) */
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 18px;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+  --color-surface: var(--surface);
+  --color-surface-elevated: var(--surface-elevated);
+  --color-surface-muted: var(--surface-muted);
+  --color-primary: var(--primary);
+  --color-primary-light: var(--primary-light);
+  --color-primary-dark: var(--primary-dark);
+  --color-primary-surface: var(--primary-surface);
+  --color-accent: var(--accent);
+  --color-accent-light: var(--accent-light);
+  --color-accent-surface: var(--accent-surface);
+  --color-error: var(--error);
+  --color-error-light: var(--error-light);
+  --color-error-surface: var(--error-surface);
+  --color-warning: var(--warning);
+  --color-warning-surface: var(--warning-surface);
+  --color-border: var(--border);
+  --color-border-light: var(--border-light);
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-tertiary: var(--text-tertiary);
+  --font-sans: var(--font-inter);
   --font-mono: var(--font-geist-mono);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #0B1929;
+    --foreground: #E2E8F0;
+    --surface: #112240;
+    --surface-elevated: #1A3355;
+    --surface-muted: #0D1F35;
+
+    --primary: #5B9BD5;
+    --primary-light: #7AB3E3;
+    --primary-dark: #3D7FBA;
+    --primary-surface: #112240;
+
+    --accent: #66BB6A;
+    --accent-light: #81C784;
+    --accent-surface: #1B3A1E;
+
+    --error: #EF5350;
+    --error-light: #E57373;
+    --error-surface: #3D1418;
+
+    --warning: #FFA726;
+    --warning-surface: #3D2A0F;
+
+    --border: #1E3A5F;
+    --border-light: #162D4A;
+    --text-primary: #E2E8F0;
+    --text-secondary: #A0AEC0;
+    --text-tertiary: #718096;
+
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+    --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5);
   }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Smooth transitions for theme switching */
+*, *::before, *::after {
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.15s ease;
+}
+
+/* Number display optimization – tabular figures for financial data */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+
+/* Trust card styling */
+.trust-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow 0.2s ease, transform 0.15s ease;
+}
+.trust-card:hover {
+  box-shadow: var(--shadow-md);
+}
+
+/* Micro-animation for interactive elements */
+.interactive-lift {
+  transition: transform 0.15s ease, box-shadow 0.2s ease;
+}
+.interactive-lift:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+/* Secure badge styling */
+.secure-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.75rem;
+  color: var(--text-tertiary);
+  letter-spacing: 0.03em;
+}
+
+/* Progress bar smooth animation */
+.progress-fill {
+  transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Focus styles for accessibility + trust */
+input:focus, select:focus, button:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+  border-color: var(--primary);
 }

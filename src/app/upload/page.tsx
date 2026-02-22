@@ -10,34 +10,49 @@ export default async function UploadPage() {
 
   if (!session) {
     return (
-      <main className="w-full min-h-screen bg-white dark:bg-black">
-        <div className="max-w-3xl mx-auto px-4 py-24 text-center space-y-6">
-          <h1 className="text-3xl font-bold text-black dark:text-zinc-50">Secure Uploads</h1>
-          <p className="text-base text-gray-600 dark:text-gray-300">
-            Upload statements after logging in with your registered WebAuthn credential. This ensures only you can decrypt the transactions stored on the server.
-          </p>
+      <main className="w-full min-h-screen bg-background">
+        <div className="max-w-xl mx-auto px-6 py-28 text-center space-y-8">
+          <div className="w-16 h-16 mx-auto rounded-2xl bg-primary-surface flex items-center justify-center" style={{ boxShadow: 'var(--shadow-md)' }}>
+            <svg className="w-8 h-8 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+            </svg>
+          </div>
+          <div className="space-y-3">
+            <h1 className="text-2xl font-semibold text-text-primary tracking-tight">Secure Uploads</h1>
+            <p className="text-sm text-text-secondary leading-relaxed max-w-md mx-auto">
+              Upload statements after logging in with your registered WebAuthn credential. Only you can decrypt the stored transactions.
+            </p>
+          </div>
           <div className="flex items-center justify-center gap-4">
             <Link
               href="/login"
-              className="px-5 py-3 bg-blue-600 text-white rounded-lg text-sm font-semibold transition hover:bg-blue-700"
+              className="px-5 py-3 bg-primary text-white text-sm font-semibold transition-colors hover:bg-primary-light interactive-lift"
+              style={{ borderRadius: 'var(--radius-sm)' }}
             >
-              Login to Upload
+              Sign in to Upload
             </Link>
             <Link
               href="/register"
-              className="px-5 py-3 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-semibold text-gray-700 dark:text-gray-200 transition hover:border-gray-500"
+              className="px-5 py-3 border border-border text-sm font-semibold text-text-secondary transition-colors hover:border-primary hover:text-primary"
+              style={{ borderRadius: 'var(--radius-sm)' }}
             >
-              Register WebAuthn Key
+              Register Key
             </Link>
           </div>
+          <p className="secure-badge justify-center pt-2">
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+            </svg>
+            End-to-end encrypted
+          </p>
         </div>
       </main>
     );
   }
 
   return (
-    <main className="w-full min-h-screen bg-white dark:bg-black">
-      <div className="max-w-3xl mx-auto px-4 py-12 sm:px-6 lg:px-8">
+    <main className="w-full min-h-screen bg-background">
+      <div className="max-w-3xl mx-auto px-6 py-10 sm:px-8">
         <UploadClient />
       </div>
     </main>
