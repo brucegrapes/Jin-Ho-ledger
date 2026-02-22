@@ -16,7 +16,11 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Monark — Secure Financial Dashboard",
-  description: "Manage and analyze your bank statements securely",
+  description: "Your financial data is encrypted before it leaves your device. We cannot see your spending.",
+  icons: {
+    icon: '/favicon.svg',
+    shortcut: '/favicon.svg',
+  },
 };
 
 export default function RootLayout({

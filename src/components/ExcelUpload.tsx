@@ -13,6 +13,7 @@ interface UploadResponse {
 
 export default function ExcelUpload() {
   const [file, setFile] = useState<File | null>(null);
+  const [bankType, setBankType] = useState<string>('hdfc');
   const [message, setMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [response, setResponse] = useState<UploadResponse | null>(null);
@@ -30,6 +31,7 @@ export default function ExcelUpload() {
     
     const formData = new FormData();
     formData.append('file', file);
+    formData.append('bankType', bankType);
     setIsLoading(true);
     setMessage('Uploading and processing...');
     
@@ -66,6 +68,21 @@ export default function ExcelUpload() {
       </div>
 
       <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-1.5">
+          <label className="text-sm font-medium text-text-secondary">Bank</label>
+          <select
+            value={bankType}
+            onChange={(e) => setBankType(e.target.value)}
+            disabled={isLoading}
+            className="border border-border bg-surface text-text-primary p-2.5 text-sm appearance-none cursor-pointer"
+            style={{ borderRadius: 'var(--radius-sm)' }}
+          >
+            <option value="hdfc">HDFC Bank</option>
+            <option value="indian_bank">Indian Bank</option>
+            <option value="iob">Indian Overseas Bank (IOB)</option>
+          </select>
+        </div>
+
         <input 
           type="file" 
           accept=".csv,.xlsx,.xls" 
