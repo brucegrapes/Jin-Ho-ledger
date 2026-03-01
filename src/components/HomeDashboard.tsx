@@ -1,6 +1,7 @@
 "use client";
 import dynamic from 'next/dynamic';
 import DeleteDataButton from './DeleteDataButton';
+import InsightsPanel from './InsightsPanel';
 
 const SpendingReport = dynamic(() => import('../components/SpendingReport'), { ssr: false });
 const BudgetTracker = dynamic(() => import('../components/BudgetTracker'), { ssr: false });
@@ -39,6 +40,9 @@ export default function HomeDashboard() {
         </div>
         <SpendingReport />
       </section>
+
+      {/* AI Insights Section */}
+      <InsightsPanel />
 
       {/* Danger Zone */}
       <section className="trust-card p-6">

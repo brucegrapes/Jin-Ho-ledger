@@ -111,6 +111,40 @@ CREATE TABLE IF NOT EXISTS tag_rules (
 );
 `;
 
+const createPaymentMethods = `
+CREATE TABLE IF NOT EXISTS payment_methods (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id TEXT NOT NULL,
+  type TEXT NOT NULL,
+  name TEXT NOT NULL,
+  last_four TEXT,
+  upi_id TEXT,
+  bank_name TEXT,
+  color TEXT NOT NULL DEFAULT '#1F4E79',
+  created_at TEXT NOT NULL,
+  FOREIGN KEY (user_id) REFERENCES users(id)
+);
+`;
+
+const createSubscriptions = `
+CREATE TABLE IF NOT EXISTS subscriptions (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id TEXT NOT NULL,
+  name TEXT NOT NULL,
+  amount REAL NOT NULL,
+  billing_cycle TEXT NOT NULL,
+  next_charge_date TEXT,
+  payment_method_id INTEGER,
+  status TEXT NOT NULL DEFAULT 'active',
+  category TEXT NOT NULL DEFAULT 'Other',
+  url TEXT,
+  notes TEXT,
+  created_at TEXT NOT NULL,
+  FOREIGN KEY (user_id) REFERENCES users(id),
+  FOREIGN KEY (payment_method_id) REFERENCES payment_methods(id)
+);
+`;
+
 db.exec(createUsers);
 db.exec(createTransactions);
 db.exec(createBudgets);
@@ -120,6 +154,8 @@ db.exec(createWebauthnChallenges);
 db.exec(createAuditLogs);
 db.exec(createCategoryRules);
 db.exec(createTagRules);
+db.exec(createPaymentMethods);
+db.exec(createSubscriptions);
 
 function safeAddColumn(statement: string) {
   try {

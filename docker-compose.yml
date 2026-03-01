@@ -1,0 +1,36 @@
+services:
+  # ─────────────────────────────────────────────
+  # Ollama – local LLM inference (with NVIDIA GPU)
+  # ─────────────────────────────────────────────
+  ollama:
+    image: ollama/ollama:0.1.48
+    container_name: ollama
+    restart: unless-stopped
+    network_mode: host
+    ports:
+      - "11434:11434"
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility,graphics
+      - OLLAMA_VULKAN=1
+      - OLLAMA_NUM_THREAD=4
+    volumes:
+      - ollama:/root/.ollama
+      - /usr/share/vulkan:/usr/share/vulkan:ro
+      - /dev/dri:/dev/dri
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [compute, utility, graphics]
+
+  # ─────────────────────────────────────────────
+  # To pull additional models after first start:
+  #   docker exec ollama ollama pull <model>
+  # ─────────────────────────────────────────────
+
+volumes:
+  ollama:
+    driver: local

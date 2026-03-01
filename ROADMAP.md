@@ -476,13 +476,13 @@ CREATE TABLE IF NOT EXISTS bank_formats (
 ### Phase 3: Configurable Categories & Tags (3-4 days)
 > **First product improvement — highest impact.**
 
-- [ ] Create `category_rules` table
-- [ ] Create `tag_rules` table
-- [ ] Create `transaction_tags` table
-- [ ] Build Settings page with Categories tab
-- [ ] Build Settings page with Tags tab
-- [ ] Migrate hardcoded rules to DB (seed defaults)
-- [ ] Update `transactionExtractor.ts` to load rules from DB
+- [X] Create `category_rules` table
+- [X] Create `tag_rules` table
+- [X] Create `transaction_tags` table
+- [X] Build Settings page with Categories tab
+- [X] Build Settings page with Tags tab
+- [X] Migrate hardcoded rules to DB (seed defaults)
+- [X] Update `transactionExtractor.ts` to load rules from DB
 - [ ] Add inline tag editing on transaction rows
 - [ ] Add tag filter improvements
 
